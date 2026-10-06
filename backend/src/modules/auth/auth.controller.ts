@@ -17,6 +17,13 @@ class AuthController {
       .catch(next);
   };
 
+  publicRegister = (req: Request, res: Response, next: NextFunction) => {
+    authService
+      .publicRegister(req.body)
+      .then((result) => sendSuccess(res, result, 'Registration submitted'))
+      .catch(next);
+  };
+
   refresh = (req: Request, res: Response, next: NextFunction) => {
     authService
       .refreshToken(req.body.refreshToken)

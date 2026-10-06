@@ -5,6 +5,7 @@ import { requireAuth, requirePermission } from '../../shared/middlewares/auth';
 import {
   LoginSchema,
   RegisterSchema,
+  PublicRegisterSchema,
   RefreshSchema,
   ChangePasswordSchema,
 } from './auth.schema';
@@ -14,6 +15,7 @@ export const authRouter = Router();
 /** Public routes */
 authRouter.post('/login', validate(LoginSchema), authController.login);
 authRouter.post('/refresh', validate(RefreshSchema), authController.refresh);
+authRouter.post('/register', validate(PublicRegisterSchema), authController.publicRegister);
 
 /** Protected routes - authentication required */
 authRouter.post('/logout', requireAuth, validate(RefreshSchema), authController.logout);

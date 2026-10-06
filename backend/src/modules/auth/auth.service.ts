@@ -4,7 +4,7 @@ import { JwtService } from '../../shared/utils/jwt';
 import { PasswordService } from '../../shared/utils/password';
 import { prisma } from '../../shared/config/database';
 import { ApiError } from '../../shared/errors/ApiError';
-import type { RegisterInput } from './auth.schema';
+import type { RegisterInput, PublicRegisterInput } from './auth.schema';
 import { createAuditLog } from '../../shared/utils/audit';
 
 export class AuthService {
@@ -80,6 +80,51 @@ export class AuthService {
     });
 
     return this.toUserDto(user);
+  }
+
+  async publicRegister(input: PublicRegisterInput) {
+    const existing = await prisma.user.findFirst({
+      where: { OR: [{ username: input.username }, { email: input.email }] },
+    });
+    if (existing) {
+      throw ApiError.conflict('Username or email already exists');
+    }
+
+    // Default role for self-registered users
+    const defaultRole = await prisma.role.findUnique({ where: { name: 'read_only' } });
+    if (!defaultRole) {
+      throw ApiError.badRequest('Default role not configured');
+    }
+
+    // Default warehouse
+    const defaultWarehouse = await prisma.warehouse.findFirst({ where: { isActive: true } });
+    if (!defaultWarehouse) {
+      throw ApiError.badRequest('No active warehouse configured');
+    }
+
+    const passwordHash = await PasswordService.hash(input.password);
+    const user = await prisma.user.create({
+      data: {
+        username: input.username,
+        email: input.email,
+        fullName: input.fullName,
+        passwordHash,
+        roleId: defaultRole.id,
+        warehouseId: defaultWarehouse.id,
+        status: 'PENDING_APPROVAL',
+        isActive: false,
+      },
+      include: { role: { include: { permissions: { include: { permission: true } } } } },
+    });
+
+    await createAuditLog({
+      userId: user.id,
+      action: 'CREATE',
+      resourceType: 'user',
+      resourceId: user.id,
+    });
+
+    return { success: true, message: 'Registration submitted. Awaiting admin approval.' };
   }
 
   async refreshToken(refreshToken: string) {

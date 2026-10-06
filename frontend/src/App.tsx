@@ -5,6 +5,7 @@ import { AuthGate, Layout } from '@/components/Layout';
 import { ToastProvider } from '@/lib/ToastProvider';
 
 import { LoginPage } from '@/pages/LoginPage';
+import { RegistrationPage } from '@/pages/RegistrationPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { ProductsPage } from '@/pages/ProductsPage';
 import { ProductFormPage } from '@/pages/ProductFormPage';
@@ -56,6 +57,7 @@ export default function App() {
       <AuthGate />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegistrationPage />} />
 
         <Route
           element={
