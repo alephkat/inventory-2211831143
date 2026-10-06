@@ -1,0 +1,49 @@
+services:
+  - type: web
+    name: inventory-api
+    runtime: node
+    region: oregon
+    rootDir: backend
+    # Build the backend, then build the frontend into frontend/dist/.
+    # The backend (app.ts) serves frontend/dist as static assets in production,
+    # so both must exist before the server starts.
+    buildCommand: |
+      npm install
+      npx prisma generate
+      npm run build
+      cd ../frontend && npm install && npm run build
+    # Apply Prisma migrations on every (re)deploy, then start the server.
+    startCommand: npx prisma migrate deploy && npm start
+    healthCheckPath: /health
+    envVars:
+      # --- Non-secret defaults ---
+      - key: NODE_ENV
+        value: production
+      - key: BCRYPT_SALT_ROUNDS
+        value: "12"
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "60000"
+      - key: RATE_LIMIT_MAX
+        value: "300"
+      # --- Database (provided automatically by the Render database below) ---
+      - key: DATABASE_URL
+        fromDatabase:
+          name: inventory-db
+          property: connectionString
+      # --- Secrets (create these in the Render dashboard before deploying) ---
+      # Generate each with: node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+      - key: JWT_ACCESS_SECRET
+        fromSecret: JWT_ACCESS_SECRET
+      - key: JWT_REFRESH_SECRET
+        fromSecret: JWT_REFRESH_SECRET
+      # CORS allowlist for the deployed frontend domain(s).
+      # In production the frontend is served from the same origin, so this
+      # can be set to the service's own URL (e.g., https://inventory-api.onrender.com).
+      - key: CORS_ORIGIN
+        fromSecret: CORS_ORIGIN
+
+databases:
+  - name: inventory-db
+    databaseName: inventory
+    plan: free
+    region: oregon

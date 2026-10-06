@@ -1,0 +1,826 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String       @id @default(uuid())
+  username      String       @unique
+  email         String       @unique
+  fullName      String
+  passwordHash  String
+  roleId        String
+  role          Role         @relation(fields: [roleId], references: [id])
+  status        UserStatus   @default(ACTIVE)
+  isActive      Boolean      @default(true)
+  profileImage  String?
+  warehouseId   String?
+  warehouse     Warehouse?   @relation(fields: [warehouseId], references: [id])
+  lastLogin     DateTime?
+  createdBy     String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  sessions      UserSession[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
+
+  performedTransactions   InventoryTransaction[] @relation("PerformedBy")
+  approvedTransactions    InventoryTransaction[] @relation("ApprovedBy")
+  requestedTransfers      StockTransfer[]        @relation("RequestedBy")
+  approvedTransfers       StockTransfer[]        @relation("ApprovedByTransfer")
+  dispatchedTransfers     StockTransfer[]        @relation("DispatchedBy")
+  receivedTransfers       StockTransfer[]        @relation("ReceivedBy")
+  confirmedTransfers      StockTransfer[]        @relation("ConfirmedBy")
+  transferHistoryEntries  TransferHistory[]      @relation("TransferHistoryBy")
+  adjustments             StockAdjustment[]      @relation("AdjustedBy")
+  approvedAdjustments     StockAdjustment[]      @relation("ApprovedByAdjustment")
+  countedSessions         StockCount[]           @relation("CountedBy")
+  reviewedCounts          StockCount[]           @relation("ReviewedBy")
+  approvedCounts          StockCount[]           @relation("ApprovedByCount")
+  countedItems            StockCountItem[]       @relation("CountItemBy")
+  createdPurchaseOrders   PurchaseOrder[]        @relation("POCreatedBy")
+  approvedPurchaseOrders  PurchaseOrder[]        @relation("POApprovedBy")
+  receivedStockReceipts   StockReceipt[]         @relation("ReceivedByReceipt")
+  approvedStockReceipts   StockReceipt[]         @relation("ApprovedByReceipt")
+  requestedIssues         StockIssue[]           @relation("Requester")
+  issuedStockIssues       StockIssue[]           @relation("IssuedBy")
+  approvedIssues          StockIssue[]           @relation("ApprovedByIssue")
+  overriddenIssues        StockIssue[]           @relation("OverrideBy")
+  createdSalesOrders      SalesOrder[]           @relation("SOCreatedBy")
+  approvedSalesOrders     SalesOrder[]           @relation("SOApprovedBy")
+  approvedSuppliers       Supplier[]             @relation("ApprovedBySupplier")
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_APPROVAL
+}
+
+model UserSession {
+  id           String   @id @default(uuid())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  refreshToken String   @unique
+  issuedAt     DateTime @default(now())
+  expiresAt    DateTime
+  userAgent    String?
+  ipAddress    String?
+  deviceInfo   String?
+  createdAt    DateTime @default(now())
+}
+
+model Role {
+  id            String            @id @default(uuid())
+  name          String            @unique
+  description   String?
+  isSystem      Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  users         User[]
+  permissions   RolePermission[]
+}
+
+model Permission {
+  id            String             @id @default(uuid())
+  name          String             @unique
+  value         String             @unique
+  description   String?
+  resource      String?
+  createdAt     DateTime           @default(now())
+
+  roles         RolePermission[]
+}
+
+model RolePermission {
+  id          String     @id @default(uuid())
+  role        Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleId      String
+  permission    Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  permissionId  String
+  createdAt   DateTime   @default(now())
+
+  @@unique([roleId, permissionId])
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  parentId    String?
+  parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  imageUrl    String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  products    Product[]
+}
+
+model Supplier {
+  id            String    @id @default(uuid())
+  name          String
+  code          String?   @unique
+  contactPerson String?
+  phone         String?
+  email         String?
+  address       String?
+  taxId         String?
+  paymentTerms  String?
+  status        SupplierStatus @default(PENDING_APPROVAL)
+  isActive      Boolean   @default(true)
+  reviewedById  String?
+  reviewedBy    User?     @relation("ApprovedBySupplier", fields: [reviewedById], references: [id])
+  reviewedAt    DateTime?
+  rejectionReason String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  products      Product[]
+  purchaseOrders PurchaseOrder[]
+  supplierProducts SupplierProduct[]
+  stockReceipts StockReceipt[]
+}
+
+enum SupplierStatus {
+  PENDING_APPROVAL
+  ACTIVE
+  INACTIVE
+  REJECTED
+  BLACKLISTED
+}
+
+model SupplierProduct {
+  id            String   @id @default(uuid())
+  supplierId    String
+  supplier      Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplierSku   String?
+  supplierPrice Float?
+  leadTimeDays  Int?
+  minOrderQty   Float?
+  isPreferred   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([supplierId, productId])
+}
+
+model Customer {
+  id          String    @id @default(uuid())
+  name        String
+  code        String?   @unique
+  contactPerson String?
+  phone       String?
+  email       String?
+  address     String?
+  taxId       String?
+  paymentTerms String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  salesOrders SalesOrder[]
+  stockIssues StockIssue[]
+}
+
+model Warehouse {
+  id          String    @id @default(uuid())
+  name        String
+  code        String?   @unique
+  address     String?
+  contactPerson String?
+  phone       String?
+  managerId   String?
+  isActive    Boolean   @default(true)
+  currentCapacity Float?
+  maxCapacity Float?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  users       User[]
+  products    Product[] @relation("WarehouseProducts")
+  inventories Inventory[]
+  transactions InventoryTransaction[]
+  stockTransfersFrom StockTransfer[] @relation("TransfersFrom")
+  stockTransfersTo   StockTransfer[] @relation("TransfersTo")
+  stockAdjustments  StockAdjustment[]
+  stockCounts       StockCount[]
+  purchaseOrders    PurchaseOrder[]
+  stockReceipts     StockReceipt[]
+  stockIssues       StockIssue[]
+  salesOrders       SalesOrder[]
+}
+
+model Product {
+  id              String        @id @default(uuid())
+  sku             String        @unique
+  barcode         String?
+  name            String
+  description     String?
+  categoryId      String
+  category        Category      @relation(fields: [categoryId], references: [id])
+  brand           String?
+  unit            UnitOfMeasurement @default(PIECE)
+  costPrice       Float
+  sellingPrice    Float
+  minStockLevel   Float         @default(0)
+  maxStockLevel   Float?
+  reorderLevel    Float         @default(0)
+  supplierId      String
+  supplier        Supplier      @relation(fields: [supplierId], references: [id])
+  warehouseId     String?
+  warehouse       Warehouse?    @relation("WarehouseProducts", fields: [warehouseId], references: [id])
+  batchNumber     String?
+  serialNumber    String?
+  manufacturingDate DateTime?
+  expiryDate      DateTime?
+  imageUrl        String?
+  status          ProductStatus @default(ACTIVE)
+  isActive        Boolean       @default(true)
+  createdBy       String?
+  updatedBy       String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  inventories     Inventory[]
+  transactions    InventoryTransaction[]
+  purchaseOrders  PurchaseOrderItem[]
+  salesOrders     SalesOrderItem[]
+  stockAdjustments StockAdjustment[]
+  transferItems   StockTransferItem[]
+  countItems      StockCountItem[]
+  receiptItems    StockReceiptItem[]
+  issueItems      StockIssueItem[]
+  supplierProducts SupplierProduct[]
+  audits          AuditLog[] @relation("ProductAudits")
+}
+
+enum UnitOfMeasurement {
+  PIECE
+  KILOGRAM
+  GRAM
+  LITER
+  MILLILITER
+  METER
+  CENTIMETER
+  BOX
+  CARTON
+  PACK
+  DOZEN
+  TON
+  SET
+  BUNDLE
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  DISCONTINUED
+  OUT_OF_STOCK
+}
+
+model Inventory {
+  id               String   @id @default(uuid())
+  productId        String
+  product          Product  @relation(fields: [productId], references: [id])
+  warehouseId      String
+  warehouse        Warehouse @relation(fields: [warehouseId], references: [id])
+  currentQuantity  Float    @default(0)
+  availableQuantity Float   @default(0)
+  reservedQuantity Float    @default(0)
+  damagedQuantity  Float    @default(0)
+  minQuantity      Float?
+  reorderQuantity  Float?
+  stockValue       Float    @default(0)
+  lastUpdated      DateTime @default(now())
+  lastTransactionId String?
+
+  @@unique([productId, warehouseId])
+}
+
+enum TransactionType {
+  RECEIVED
+  ISSUED
+  RETURNED
+  TRANSFERRED
+  ADJUSTED
+  DAMAGED
+  LOST
+  EXPIRED
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  APPROVED
+  REJECTED
+}
+
+model InventoryTransaction {
+  id             String            @id @default(uuid())
+  productId      String
+  product        Product           @relation(fields: [productId], references: [id])
+  warehouseId    String
+  warehouse      Warehouse         @relation(fields: [warehouseId], references: [id])
+  type           TransactionType
+  status         TransactionStatus @default(PENDING)
+  quantity       Float
+  previousQuantity Float?
+  newQuantity    Float?
+  referenceNumber String?
+  reason         String?
+  batchNumber    String?
+  expiryDate     DateTime?
+  performedById  String?
+  performedBy    User?             @relation("PerformedBy", fields: [performedById], references: [id])
+  createdAt      DateTime          @default(now())
+  approvedById   String?
+  approvedBy     User?             @relation("ApprovedBy", fields: [approvedById], references: [id])
+  approvedAt     DateTime?
+  rejectionReason String?
+  relatedTransferId String?
+  relatedTransfer StockTransfer?  @relation(fields: [relatedTransferId], references: [id])
+}
+
+model StockTransfer {
+  id            String            @id @default(uuid())
+  referenceNumber String?         @unique
+  fromWarehouseId String
+  fromWarehouse  Warehouse       @relation("TransfersFrom", fields: [fromWarehouseId], references: [id])
+  toWarehouseId   String
+  toWarehouse    Warehouse       @relation("TransfersTo", fields: [toWarehouseId], references: [id])
+  status        TransferStatus    @default(REQUESTED)
+  notes         String?
+  requestedById String?
+  requestedBy   User?            @relation("RequestedBy", fields: [requestedById], references: [id])
+  requestedAt   DateTime?
+  approvedById  String?
+  approvedBy    User?            @relation("ApprovedByTransfer", fields: [approvedById], references: [id])
+  approvedAt    DateTime?
+  dispatchedById String?
+  dispatchedBy   User?           @relation("DispatchedBy", fields: [dispatchedById], references: [id])
+  dispatchedAt   DateTime?
+  receivedById  String?
+  receivedBy    User?            @relation("ReceivedBy", fields: [receivedById], references: [id])
+  receivedAt    DateTime?
+  confirmedById String?
+  confirmedBy   User?            @relation("ConfirmedBy", fields: [confirmedById], references: [id])
+  confirmedAt   DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  items         StockTransferItem[]
+  transactions  InventoryTransaction[]
+  history       TransferHistory[]
+}
+
+enum TransferStatus {
+  REQUESTED
+  APPROVED
+  DISPATCHED
+  IN_TRANSIT
+  RECEIVED
+  CONFIRMED
+  REJECTED
+  CANCELLED
+}
+
+model StockTransferItem {
+  id              String            @id @default(uuid())
+  transferId      String
+  transfer        StockTransfer     @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product           @relation(fields: [productId], references: [id])
+  quantity        Float
+  receivedQuantity Float            @default(0)
+  batchNumber     String?
+  expiryDate      DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([transferId, productId])
+}
+
+model TransferHistory {
+  id            String        @id @default(uuid())
+  transferId    String
+  transfer      StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  fromStatus    TransferStatus?
+  toStatus      TransferStatus
+  changedById   String?
+  changedBy     User?         @relation("TransferHistoryBy", fields: [changedById], references: [id])
+  notes         String?
+  createdAt     DateTime      @default(now())
+}
+
+model StockAdjustment {
+  id            String            @id @default(uuid())
+  adjustmentNumber String         @unique
+  productId     String
+  product       Product           @relation(fields: [productId], references: [id])
+  warehouseId   String
+  warehouse     Warehouse         @relation(fields: [warehouseId], references: [id])
+  oldQuantity   Float
+  newQuantity   Float
+  difference    Float
+  reason        String
+  reasonCode    AdjustmentReasonCode
+  adjustedById  String
+  adjustedBy    User             @relation("AdjustedBy", fields: [adjustedById], references: [id])
+  adjustedAt    DateTime         @default(now())
+  approvedById  String?
+  approvedBy    User?            @relation("ApprovedByAdjustment", fields: [approvedById], references: [id])
+  approvedAt    DateTime?
+  rejectionReason String?
+  status        TransactionStatus @default(PENDING)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+enum AdjustmentReasonCode {
+  DAMAGED
+  EXPIRED
+  LOST
+  THEFT
+  CYCLE_COUNT
+  RECLASSIFICATION
+  RETURN
+  QUALITY_ISSUE
+  OTHER
+}
+
+model StockCount {
+  id            String        @id @default(uuid())
+  countNumber   String        @unique
+  warehouseId   String
+  warehouse     Warehouse     @relation(fields: [warehouseId], references: [id])
+  status        CountStatus   @default(DRAFT)
+  countedById   String?
+  countedBy     User?         @relation("CountedBy", fields: [countedById], references: [id])
+  countedAt     DateTime?
+  reviewedById  String?
+  reviewedBy    User?         @relation("ReviewedBy", fields: [reviewedById], references: [id])
+  reviewedAt    DateTime?
+  approvedById  String?
+  approvedBy    User?         @relation("ApprovedByCount", fields: [approvedById], references: [id])
+  approvedAt    DateTime?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  items         StockCountItem[]
+}
+
+enum CountStatus {
+  DRAFT
+  IN_PROGRESS
+  COMPLETED
+  REVIEWED
+  APPROVED
+  ADJUSTED
+  CANCELLED
+}
+
+model StockCountItem {
+  id              String           @id @default(uuid())
+  countId         String
+  count           StockCount       @relation(fields: [countId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product          @relation(fields: [productId], references: [id])
+  systemQuantity  Float
+  countedQuantity Float
+  variance        Float
+  varianceValue   Float
+  // Non-nullable so @@unique([countId, productId, batchNumber]) is enforced:
+  // Postgres treats NULLs as distinct, so a nullable column would silently
+  // allow duplicate un-batched lines on the same count.
+  batchNumber     String           @default("")
+  expiryDate      DateTime?
+  location        String?
+  notes           String?
+  countedById     String?
+  countedBy       User?            @relation("CountItemBy", fields: [countedById], references: [id])
+  countedAt       DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([countId, productId, batchNumber])
+}
+
+enum OrderStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  RECEIVED
+  PARTIALLY_RECEIVED
+  ISSUED
+  COMPLETED
+  CANCELLED
+}
+
+model PurchaseOrder {
+  id            String       @id @default(uuid())
+  orderNumber   String       @unique
+  supplierId    String
+  supplier      Supplier     @relation(fields: [supplierId], references: [id])
+  warehouseId   String
+  warehouse     Warehouse    @relation(fields: [warehouseId], references: [id])
+  status        OrderStatus  @default(DRAFT)
+  subtotal      Float        @default(0)
+  taxAmount     Float        @default(0)
+  discountAmount Float       @default(0)
+  totalAmount   Float        @default(0)
+  currency      String       @default("USD")
+  expectedDate  DateTime?
+  notes         String?
+  terms         String?
+  createdById   String?
+  createdBy     User?        @relation("POCreatedBy", fields: [createdById], references: [id])
+  approvedById  String?
+  approvedBy    User?        @relation("POApprovedBy", fields: [approvedById], references: [id])
+  approvedAt    DateTime?
+  rejectionReason String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  items         PurchaseOrderItem[]
+  receipts      StockReceipt[]
+}
+
+model PurchaseOrderItem {
+  id             String    @id @default(uuid())
+  purchaseOrderId String
+  purchaseOrder  PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product   @relation(fields: [productId], references: [id])
+  quantity       Float
+  receivedQuantity Float   @default(0)
+  unitPrice      Float
+  discountPercent Float    @default(0)
+  discountAmount  Float    @default(0)
+  taxPercent      Float    @default(0)
+  taxAmount       Float    @default(0)
+  totalPrice      Float
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  receiptItems   StockReceiptItem[]
+}
+
+model StockReceipt {
+  id            String        @id @default(uuid())
+  receiptNumber String        @unique
+  purchaseOrderId String?
+  purchaseOrder  PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+  supplierId    String?
+  supplier      Supplier?     @relation(fields: [supplierId], references: [id])
+  warehouseId   String
+  warehouse     Warehouse     @relation(fields: [warehouseId], references: [id])
+  status        ReceiptStatus @default(PENDING)
+  subtotal      Float         @default(0)
+  taxAmount     Float         @default(0)
+  discountAmount Float        @default(0)
+  totalAmount   Float         @default(0)
+  currency      String        @default("USD")
+  notes         String?
+  receivedById  String?
+  receivedBy    User?         @relation("ReceivedByReceipt", fields: [receivedById], references: [id])
+  receivedAt    DateTime?
+  approvedById  String?
+  approvedBy    User?         @relation("ApprovedByReceipt", fields: [approvedById], references: [id])
+  approvedAt    DateTime?
+  rejectionReason String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  items         StockReceiptItem[]
+}
+
+enum ReceiptStatus {
+  PENDING
+  APPROVED
+  RECEIVED
+  PARTIALLY_RECEIVED
+  REJECTED
+  CANCELLED
+}
+
+model StockReceiptItem {
+  id              String           @id @default(uuid())
+  receiptId       String
+  receipt         StockReceipt     @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product          @relation(fields: [productId], references: [id])
+  purchaseOrderItemId String?
+  purchaseOrderItem PurchaseOrderItem? @relation(fields: [purchaseOrderItemId], references: [id])
+  orderedQuantity Float?
+  receivedQuantity Float
+  unitPrice       Float
+  discountPercent Float            @default(0)
+  discountAmount  Float            @default(0)
+  taxPercent      Float            @default(0)
+  taxAmount       Float            @default(0)
+  totalPrice      Float
+  batchNumber     String?
+  expiryDate      DateTime?
+  manufacturingDate DateTime?
+  serialNumbers   String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model StockIssue {
+  id            String        @id @default(uuid())
+  issueNumber   String        @unique
+  warehouseId   String
+  warehouse     Warehouse     @relation(fields: [warehouseId], references: [id])
+  requesterId   String?
+  requester     User?         @relation("Requester", fields: [requesterId], references: [id])
+  customerId    String?
+  customer      Customer?     @relation(fields: [customerId], references: [id])
+  department    String?
+  status        IssueStatus   @default(PENDING)
+  subtotal      Float         @default(0)
+  taxAmount     Float         @default(0)
+  discountAmount Float        @default(0)
+  totalAmount   Float         @default(0)
+  currency      String        @default("USD")
+  notes         String?
+  issuedById    String?
+  issuedBy      User?         @relation("IssuedBy", fields: [issuedById], references: [id])
+  issuedAt      DateTime?
+  approvedById  String?
+  approvedBy    User?         @relation("ApprovedByIssue", fields: [approvedById], references: [id])
+  approvedAt    DateTime?
+  rejectionReason String?
+  overrideById  String?
+  overrideBy    User?         @relation("OverrideBy", fields: [overrideById], references: [id])
+  overrideAt    DateTime?
+  overrideReason String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  items         StockIssueItem[]
+}
+
+enum IssueStatus {
+  PENDING
+  APPROVED
+  ISSUED
+  PARTIALLY_ISSUED
+  REJECTED
+  CANCELLED
+}
+
+model StockIssueItem {
+  id            String         @id @default(uuid())
+  issueId       String
+  issue         StockIssue     @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product        @relation(fields: [productId], references: [id])
+  requestedQuantity Float
+  issuedQuantity Float         @default(0)
+  unitPrice     Float
+  discountPercent Float        @default(0)
+  discountAmount Float         @default(0)
+  taxPercent    Float          @default(0)
+  taxAmount     Float          @default(0)
+  totalPrice    Float
+  batchNumber   String?
+  expiryDate    DateTime?
+  notes         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model SalesOrder {
+  id            String       @id @default(uuid())
+  orderNumber   String       @unique
+  customerId    String
+  customer      Customer     @relation(fields: [customerId], references: [id])
+  warehouseId   String
+  warehouse     Warehouse    @relation(fields: [warehouseId], references: [id])
+  status        OrderStatus  @default(DRAFT)
+  subtotal      Float        @default(0)
+  taxAmount     Float        @default(0)
+  totalAmount   Float        @default(0)
+  currency      String       @default("USD")
+  expectedDate  DateTime?
+  createdById   String?
+  createdBy     User?        @relation("SOCreatedBy", fields: [createdById], references: [id])
+  approvedById  String?
+  approvedBy    User?        @relation("SOApprovedBy", fields: [approvedById], references: [id])
+  approvedAt    DateTime?
+  shippedAt     DateTime?
+  deliveredAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  items         SalesOrderItem[]
+}
+
+model SalesOrderItem {
+  id           String    @id @default(uuid())
+  salesOrderId String
+  salesOrder   SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product   @relation(fields: [productId], references: [id])
+  quantity     Float
+  fulfilledQuantity Float @default(0)
+  unitPrice    Float
+  totalPrice   Float
+  createdAt    DateTime  @default(now())
+}
+
+model AuditLog {
+  id            String     @id @default(uuid())
+  userId        String
+  user          User       @relation(fields: [userId], references: [id])
+  userName      String?
+  action        AuditAction
+  resourceType  String
+  resourceId    String
+  oldValues     Json?
+  newValues     Json?
+  ipAddress     String?
+  userAgent     String?
+  productId     String?
+  product       Product?   @relation("ProductAudits", fields: [productId], references: [id])
+  createdAt     DateTime   @default(now())
+
+  @@index([resourceType])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([resourceType, resourceId])
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  APPROVE
+  REJECT
+  RECEIVE
+  RETURN
+  ISSUE
+  TRANSFER
+  ADJUST
+  COUNT
+  DISPATCH
+  CONFIRM
+  OVERRIDE
+}
+
+enum NotificationType {
+  LOW_STOCK
+  EXPIRING
+  ORDER_PENDING
+  ORDER_APPROVED
+  ORDER_REJECTED
+  STOCK_TRANSFER
+  RECEIPT_PENDING
+  RECEIPT_RECEIVED
+  ISSUE_PENDING
+  ISSUE_APPROVED
+  COUNT_VARIANCE
+  SYSTEM
+}
+
+enum NotificationPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Notification {
+  id            String             @id @default(uuid())
+  userId        String
+  user          User               @relation(fields: [userId], references: [id])
+  title         String
+  body          String
+  type          NotificationType
+  priority      NotificationPriority @default(MEDIUM)
+  isRead        Boolean            @default(false)
+  data          Json?
+  createdAt     DateTime           @default(now())
+  readAt        DateTime?
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
