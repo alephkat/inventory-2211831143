@@ -83,6 +83,14 @@ export class UserService {
       }
       status = data.status as UserStatus;
     }
+    if (data.roleId !== undefined) {
+      const role = await prisma.role.findUnique({ where: { id: data.roleId } });
+      if (!role) throw ApiError.badRequest('Invalid role');
+    }
+    let isActive = data.isActive;
+    if (data.status !== undefined && data.isActive === undefined) {
+      isActive = status === 'ACTIVE';
+    }
     await prisma.user.update({
       where: { id },
       data: {
@@ -91,7 +99,7 @@ export class UserService {
         roleId: data.roleId ?? undefined,
         warehouseId: data.warehouseId === undefined ? undefined : data.warehouseId,
         status: status ?? undefined,
-        isActive: data.isActive ?? undefined,
+        isActive: isActive ?? undefined,
       },
     });
     return this.get(id);

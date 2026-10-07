@@ -5,34 +5,34 @@ import { PERMISSIONS } from '../../shared/types/permissions';
 class AuthController {
   login = (req: Request, res: Response, next: NextFunction) => {
     authService
-      .login(req.body.username, req.body.password)
+      .login(req.body.username, req.body.password, req)
       .then((result) => sendSuccess(res, result))
       .catch(next);
   };
 
   register = (req: Request, res: Response, next: NextFunction) => {
     authService
-      .register(req.body, req.user!.id)
+      .register(req.body, req.user!.id, req)
       .then((result) => sendSuccess(res, result, 'User registered'))
       .catch(next);
   };
 
   publicRegister = (req: Request, res: Response, next: NextFunction) => {
     authService
-      .publicRegister(req.body)
+      .publicRegister(req.body, req)
       .then((result) => sendSuccess(res, result, 'Registration submitted'))
       .catch(next);
   };
 
   refresh = (req: Request, res: Response, next: NextFunction) => {
     authService
-      .refreshToken(req.body.refreshToken)
+      .refreshToken(req.body.refreshToken, req)
       .then((result) => sendSuccess(res, result))
       .catch(next);
   };
 
   logout = (req: Request, res: Response, next: NextFunction) => {
-    authService.logout(req.body.refreshToken).then((result) => sendSuccess(res, result)).catch(next);
+    authService.logout(req.user!.id, req.body.refreshToken, req).then((result) => sendSuccess(res, result)).catch(next);
   };
 
   me = (req: Request, res: Response, next: NextFunction) => {
@@ -44,6 +44,11 @@ class AuthController {
       .changePassword(req.user!.id, req.body.currentPassword, req.body.newPassword)
       .then((result) => sendSuccess(res, result))
       .catch(next);
+  };
+
+  captcha = (_req: Request, res: Response) => {
+    const { token, question } = authService.generateCaptcha();
+    sendSuccess(res, { token, question });
   };
 
   permissions = (_req: Request, res: Response) => {

@@ -19,6 +19,8 @@ export const PublicRegisterSchema = z.object({
   email: z.string().email(),
   fullName: z.string().min(1),
   password: z.string().min(8),
+  captchaToken: z.string().min(1),
+  captchaAnswer: z.number().int().min(0),
 });
 
 export const RefreshSchema = z.object({

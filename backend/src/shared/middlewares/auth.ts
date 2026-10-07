@@ -60,7 +60,7 @@ export const requireAuth = async (
       },
     });
 
-    if (!user || !user.isActive) {
+    if (!user || !user.isActive || user.status !== 'ACTIVE') {
       return _res.status(401).json({
         success: false,
         message: 'User not found or inactive',

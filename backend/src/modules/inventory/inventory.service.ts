@@ -27,7 +27,7 @@ export class StockLevelService {
     ]);
     const mapped = items.map((i) => ({
       ...i,
-      stockValue: (i.currentQuantity * (i.product?.costPrice ?? 0)) || i.stockValue,
+      stockValue: i.currentQuantity * (i.product?.costPrice ?? 0),
     }));
     return { items: mapped, total, page, limit };
   }

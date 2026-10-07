@@ -1,25 +1,25 @@
 {
   "name": "inventory-backend",
   "version": "1.0.0",
-  "description": "Production-grade Mobile Inventory Management System - Backend API (Node.js + Express + TypeScript + Prisma + PostgreSQL)",
-  "main": "dist/index.js",
+  "description": "Production-grade Mobile Inventory Management System - Backend API (Node.js + Express + Prisma + PostgreSQL)",
+  "main": "src/index.js",
+  "type": "module",
   "engines": {
     "node": ">=18"
   },
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "seed": "tsx src/seed.ts",
-    "lint": "eslint src tests scripts --ext ts,js",
-    "format": "prettier --write \"src/**/*.ts\"",
+    "seed": "node src/seed.js",
+    "bootstrap": "node scripts/bootstrap.js",
+    "lint": "eslint src tests scripts --ext js",
+    "format": "prettier --write \"src/**/*.js\"",
     "test": "node scripts/run-tests.js",
-    "test:watch": "node scripts/run-tests.js",
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json"
+    "test:watch": "node scripts/run-tests.js"
   },
   "dependencies": {
     "@prisma/client": "^5.15.0",
@@ -34,22 +34,10 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/bcrypt": "^5.0.2",
-    "@types/cors": "^2.8.17",
-    "@types/express": "^4.17.21",
-    "@types/jsonwebtoken": "^9.0.5",
-    "@types/morgan": "^1.9.9",
-    "@types/node": "^20.14.0",
-    "@typescript-eslint/eslint-plugin": "^8.0.0",
-    "@typescript-eslint/parser": "^8.0.0",
-    "autoprefixer": "^10.4.20",
     "eslint": "^8.57.0",
     "morgan": "^1.10.0",
     "prettier": "^3.3.2",
-    "prisma": "^5.22.0",
-    "tsconfig-paths": "^4.2.0",
-    "tsx": "^4.15.0",
-    "typescript": "^5.5.2"
+    "prisma": "^5.22.0"
   },
   "allowScripts": {
     "prisma@5.22.0": true,

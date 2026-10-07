@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authController } from './auth.controller';
 import { validate } from '../../shared/middlewares/validate';
 import { requireAuth, requirePermission } from '../../shared/middlewares/auth';
+import rateLimit from 'express-rate-limit';
 import {
   LoginSchema,
   RegisterSchema,
@@ -12,10 +13,19 @@ import {
 
 export const authRouter = Router();
 
+const registerLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many registration attempts. Please try again later.' },
+});
+
 /** Public routes */
 authRouter.post('/login', validate(LoginSchema), authController.login);
 authRouter.post('/refresh', validate(RefreshSchema), authController.refresh);
-authRouter.post('/register', validate(PublicRegisterSchema), authController.publicRegister);
+authRouter.get('/captcha', authController.captcha);
+authRouter.post('/register', registerLimiter, validate(PublicRegisterSchema), authController.publicRegister);
 
 /** Protected routes - authentication required */
 authRouter.post('/logout', requireAuth, validate(RefreshSchema), authController.logout);
@@ -27,9 +37,10 @@ authRouter.post(
   authController.changePassword,
 );
 
-/** Registration is gated strictly on the backend — only admins may create users. */
+/** Admin-only user creation. Moved to /register/admin to avoid shadowing the
+  * public self-registration route. */
 authRouter.post(
-  '/register',
+  '/register/admin',
   requireAuth,
   requirePermission('manage_users'),
   validate(RegisterSchema),

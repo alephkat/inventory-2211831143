@@ -46,4 +46,5 @@ export const config = {
     max: parseInt(process.env.RATE_LIMIT_MAX ?? '100', 10),
   },
   corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:3000',
+  enablePublicRegistration: process.env.ENABLE_PUBLIC_REGISTRATION === 'true',
 };

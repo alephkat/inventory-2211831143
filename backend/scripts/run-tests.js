@@ -2,10 +2,7 @@
 /**
  * Cross-platform test entry point.
  *
- * Node's built-in test runner only auto-discovers `.js`/`.mjs`/`.cjs`, and
- * glob patterns in the positional arguments landed in Node 21. Rather than
- * pin an engine range, this script walks `tests/` itself and hands the
- * explicit file list to `node --import tsx --test`, which works on Node 18+.
+ * Node's built-in test runner auto-discovers `.js`/`.mjs`/`.cjs` files.
  */
 const { spawnSync } = require('node:child_process');
 const { readdirSync } = require('node:fs');
@@ -26,7 +23,7 @@ const collect = (dir) => {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
       found.push(...collect(full));
-    } else if (entry.isFile() && entry.name.endsWith('.test.ts')) {
+    } else if (entry.isFile() && entry.name.endsWith('.test.js')) {
       found.push(full);
     }
   }
@@ -73,7 +70,7 @@ for (const [key, value] of Object.entries(TEST_ENV)) {
 
 const result = spawnSync(
   process.execPath,
-  ['--import', 'tsx', '--test', '--test-reporter=spec', ...selected.map((f) => f.split(sep).join('/'))],
+  ['--test', '--test-reporter=spec', ...selected.map((f) => f.split(sep).join('/'))],
   { stdio: 'inherit', cwd: ROOT, env },
 );
 

@@ -73,6 +73,7 @@ model UserSession {
   userAgent    String?
   ipAddress    String?
   deviceInfo   String?
+  usedAt       DateTime?
   createdAt    DateTime @default(now())
 }
 

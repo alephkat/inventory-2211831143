@@ -6,15 +6,41 @@ import { prisma } from '../../shared/config/database';
 import { ApiError } from '../../shared/errors/ApiError';
 import type { RegisterInput, PublicRegisterInput } from './auth.schema';
 import { createAuditLog } from '../../shared/utils/audit';
+import { notificationService } from '../../modules/notifications/notifications.service';
+import { NotificationPriority, NotificationType } from '@prisma/client';
+
+function getUserAgent(req: { headers: { [key: string]: string | string[] | undefined } } | undefined): string | undefined {
+  const val = req?.headers['user-agent'];
+  if (typeof val === 'string') return val;
+  return undefined;
+}
 
 export class AuthService {
-  /**
-   * Authenticate by username + password. Returns user info and tokens.
-   * Permissions are attached server-side from the role, never from the client.
-   */
-  async login(username: string, password: string) {
+  private captchaStore = new Map<string, { answer: number; expiresAt: Date }>();
+
+  generateCaptcha() {
+    const a = Math.floor(Math.random() * 10) + 1;
+    const b = Math.floor(Math.random() * 10) + 1;
+    const answer = a + b;
+    const token = Array.from({ length: 32 }, () => 'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]).join('');
+    this.captchaStore.set(token, { answer, expiresAt: new Date(Date.now() + 5 * 60 * 1000) });
+    return { token, question: `What is ${a} + ${b}?` };
+  }
+
+  verifyCaptcha(token: string, answer: number): boolean {
+    const entry = this.captchaStore.get(token);
+    if (!entry || entry.expiresAt < new Date()) return false;
+    this.captchaStore.delete(token);
+    return entry.answer === answer;
+  }
+
+  private getClientIp(req: { ip?: string; socket?: { remoteAddress?: string } } | undefined): string | undefined {
+    return req?.ip || req?.socket?.remoteAddress;
+  }
+
+  async login(username: string, password: string, req?: { headers: { [key: string]: string | string[] | undefined }; ip?: string; socket?: { remoteAddress?: string } }) {
     const user = await prisma.user.findFirst({
-      where: { username, isActive: true },
+      where: { username, isActive: true, status: 'ACTIVE' },
       include: { role: { include: { permissions: { include: { permission: true } } } } },
     });
     if (!user) {
@@ -31,7 +57,7 @@ export class AuthService {
       data: { lastLogin: new Date() },
     });
 
-    const tokens = await this.issueTokens(user);
+    const tokens = await this.issueTokens(user, getUserAgent(req), this.getClientIp(req));
     const userDto = this.toUserDto(user);
 
     await createAuditLog({
@@ -39,12 +65,14 @@ export class AuthService {
       action: 'LOGIN',
       resourceType: 'auth',
       resourceId: user.id,
+      ipAddress: this.getClientIp(req),
+      userAgent: getUserAgent(req),
     });
 
     return { user: userDto, tokens };
   }
 
-  async register(input: RegisterInput, adminUserId: string) {
+  async register(input: RegisterInput, adminUserId: string, req?: { headers: { [key: string]: string | string[] | undefined }; ip?: string; socket?: { remoteAddress?: string } }) {
     const existing = await prisma.user.findFirst({
       where: { OR: [{ username: input.username }, { email: input.email }] },
     });
@@ -77,26 +105,31 @@ export class AuthService {
       action: 'CREATE',
       resourceType: 'user',
       resourceId: user.id,
+      ipAddress: this.getClientIp(req),
+      userAgent: getUserAgent(req),
     });
 
     return this.toUserDto(user);
   }
 
-  async publicRegister(input: PublicRegisterInput) {
+  async publicRegister(input: PublicRegisterInput, req?: { headers: { [key: string]: string | string[] | undefined }; ip?: string; socket?: { remoteAddress?: string } }) {
+    const captchaValid = this.verifyCaptcha(input.captchaToken, input.captchaAnswer);
+    if (!captchaValid) {
+      throw ApiError.badRequest('Invalid CAPTCHA');
+    }
+
     const existing = await prisma.user.findFirst({
       where: { OR: [{ username: input.username }, { email: input.email }] },
     });
     if (existing) {
-      throw ApiError.conflict('Username or email already exists');
+      throw ApiError.conflict('Registration is currently unavailable');
     }
 
-    // Default role for self-registered users
     const defaultRole = await prisma.role.findUnique({ where: { name: 'read_only' } });
     if (!defaultRole) {
       throw ApiError.badRequest('Default role not configured');
     }
 
-    // Default warehouse
     const defaultWarehouse = await prisma.warehouse.findFirst({ where: { isActive: true } });
     if (!defaultWarehouse) {
       throw ApiError.badRequest('No active warehouse configured');
@@ -117,45 +150,68 @@ export class AuthService {
       include: { role: { include: { permissions: { include: { permission: true } } } } },
     });
 
+    await prisma.user.update({ where: { id: user.id }, data: { createdBy: user.id } });
+
     await createAuditLog({
       userId: user.id,
       action: 'CREATE',
       resourceType: 'user',
       resourceId: user.id,
+      ipAddress: this.getClientIp(req),
+      userAgent: getUserAgent(req),
     });
+
+    notificationService.dispatchToPermissions(['manage_users'], {
+      title: 'New registration pending approval',
+      body: `${input.fullName} (${input.username}) has requested an account.`,
+      type: NotificationType.SYSTEM,
+      priority: NotificationPriority.HIGH,
+      data: { userId: user.id, username: input.username, email: input.email },
+    }).catch(() => {});
 
     return { success: true, message: 'Registration submitted. Awaiting admin approval.' };
   }
 
-  async refreshToken(refreshToken: string) {
+  async refreshToken(refreshToken: string, req?: { headers: { [key: string]: string | string[] | undefined }; ip?: string; socket?: { remoteAddress?: string } }) {
     const refreshTokenHash = this.hashRefreshToken(refreshToken);
-    // Verifying here is the point: an expired or forged token throws before
-    // any session lookup happens. The claims themselves are re-read from the
-    // session's user below rather than trusted from the token.
     try {
       JwtService.verifyRefreshToken(refreshToken);
     } catch {
       throw ApiError.unauthorized('Invalid refresh token');
     }
 
-    const session = await prisma.userSession.findUnique({
-      where: { refreshToken: refreshTokenHash },
+    const session = await prisma.userSession.findFirst({
+      where: { refreshToken: refreshTokenHash, expiresAt: { gt: new Date() } },
       include: { user: { include: { role: { include: { permissions: { include: { permission: true } } } } } } },
     });
-    if (!session || session.expiresAt < new Date()) {
+    if (!session) {
       throw ApiError.unauthorized('Refresh session expired or invalid');
     }
 
-    const user = session.user;
     await prisma.userSession.delete({ where: { id: session.id } });
 
-    const tokens = await this.issueTokens(user);
+    const user = session.user;
+    const tokens = await this.issueTokens(user, getUserAgent(req), this.getClientIp(req));
     const userDto = this.toUserDto(user);
     return { user: userDto, tokens };
   }
 
-  async logout(refreshToken: string) {
-    await prisma.userSession.deleteMany({ where: { refreshToken: this.hashRefreshToken(refreshToken) } });
+  async logout(userId: string, refreshToken: string, _req?: { headers: { [key: string]: string | string[] | undefined }; ip?: string; socket?: { remoteAddress?: string } }) {
+    try {
+      JwtService.verifyRefreshToken(refreshToken);
+    } catch {
+      throw ApiError.unauthorized('Invalid refresh token');
+    }
+
+    const refreshTokenHash = this.hashRefreshToken(refreshToken);
+    const session = await prisma.userSession.findFirst({
+      where: { userId, refreshToken: refreshTokenHash },
+    });
+    if (!session) {
+      throw ApiError.notFound('Session not found');
+    }
+
+    await prisma.userSession.delete({ where: { id: session.id } });
     return { success: true };
   }
 
@@ -185,10 +241,7 @@ export class AuthService {
     return { success: true };
   }
 
-  private async issueTokens(user: any) {
-    // Permissions are deliberately not embedded in the token: the auth
-    // middleware re-reads them from the database on every request so a role
-    // change takes effect immediately instead of at token expiry.
+  private async issueTokens(user: { id: string; username: string; role: { name: string }; status: string }, userAgent?: string, ipAddress?: string) {
     const payload: JwtPayload = {
       sub: user.id,
       username: user.username,
@@ -203,8 +256,8 @@ export class AuthService {
         userId: user.id,
         refreshToken: this.hashRefreshToken(refreshToken),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        userAgent: undefined,
-        ipAddress: undefined,
+        userAgent: userAgent ?? undefined,
+        ipAddress: ipAddress ?? undefined,
       },
     });
     return { accessToken, refreshToken, tokenType: 'Bearer', expiresAt: new Date(Date.now() + 15 * 60 * 1000) };
