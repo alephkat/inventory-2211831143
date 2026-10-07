@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { api, onUnauthorized, refreshAccessToken, tokenStore } from './api';
+import { api, ApiError, onUnauthorized, refreshAccessToken, tokenStore } from './api';
 import type { AuthUser, Tokens } from '@/types';
 
 interface AuthState {
@@ -38,9 +38,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const me = await api.get<AuthUser>('/api/v1/auth/me');
       setUser(me);
-    } catch {
-      // A failed refresh has already cleared the tokens and notified listeners.
-      setUser(null);
+    } catch (error) {
+      const err = error as ApiError & { status?: number };
+      if (err?.status === 401) {
+        tokenStore.clear();
+        setUser(null);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -72,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    const accessToken = tokenStore.access;
     const refreshToken = tokenStore.refresh;
     tokenStore.clear();
     setUser(null);
@@ -83,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${tokenStore.access ?? ''}`,
+          Authorization: `Bearer ${accessToken ?? ''}`,
         },
         body: JSON.stringify({ refreshToken }),
       });

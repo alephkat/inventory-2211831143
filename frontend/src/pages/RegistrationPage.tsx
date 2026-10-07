@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Package } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -15,6 +15,23 @@ export function RegistrationPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaQuestion, setCaptchaQuestion] = useState('');
+  const [captchaAnswer, setCaptchaAnswer] = useState('');
+
+  useEffect(() => {
+    const loadCaptcha = async () => {
+      try {
+        const res = await api.get<{ token: string; question: string }>('/api/v1/auth/captcha');
+        setCaptchaToken(res.token);
+        setCaptchaQuestion(res.question);
+        setCaptchaAnswer('');
+      } catch {
+        setCaptchaQuestion('Failed to load CAPTCHA');
+      }
+    };
+    loadCaptcha();
+  }, []);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -36,6 +53,12 @@ export function RegistrationPage() {
       return;
     }
 
+    const answer = parseInt(captchaAnswer, 10);
+    if (Number.isNaN(answer)) {
+      setError('Please answer the CAPTCHA.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await api.post('/api/v1/auth/register', {
@@ -43,6 +66,8 @@ export function RegistrationPage() {
         email: email.trim(),
         fullName: fullName.trim(),
         password,
+        captchaToken,
+        captchaAnswer: answer,
       });
       setSuccess('Registration submitted successfully! Your account is pending admin approval. You will be able to sign in once approved.');
       setUsername('');
@@ -50,6 +75,7 @@ export function RegistrationPage() {
       setFullName('');
       setPassword('');
       setConfirmPassword('');
+      setCaptchaAnswer('');
     } catch (cause) {
       setError(errorMessage(cause, 'Registration failed. Please try again.'));
     } finally {
@@ -180,6 +206,26 @@ export function RegistrationPage() {
                 disabled={isSubmitting}
               />
             </Field>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700">CAPTCHA</label>
+              <div className="flex items-center gap-3">
+                <span className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-mono text-slate-800">
+                  {captchaQuestion || 'Loading...'}
+                </span>
+              </div>
+              <Input
+                id="captchaAnswer"
+                name="captchaAnswer"
+                type="text"
+                inputMode="numeric"
+                value={captchaAnswer}
+                onChange={(event) => setCaptchaAnswer(event.target.value)}
+                placeholder="Your answer"
+                disabled={isSubmitting}
+                required
+              />
+            </div>
 
             <Button type="submit" className="w-full" loading={isSubmitting}>
               {isSubmitting ? 'Submitting…' : 'Create Account'}

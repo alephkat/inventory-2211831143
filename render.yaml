@@ -4,16 +4,18 @@ services:
     runtime: node
     region: oregon
     rootDir: backend
+    nodeVersion: "20"
     # Build the backend, then build the frontend into frontend/dist/.
     # The backend (app.ts) serves frontend/dist as static assets in production,
     # so both must exist before the server starts.
     buildCommand: |
       npm install
       npx prisma generate
-      npm run build
       cd ../frontend && npm install && npm run build
-    # Apply Prisma migrations on every (re)deploy, then start the server.
-    startCommand: npx prisma migrate deploy && npm start
+    # Apply Prisma migrations on every (re)deploy, bootstrap a fresh database
+    # with permissions, roles, warehouse and admin user if no users exist,
+    # then start the server.
+    startCommand: npx prisma migrate deploy && node scripts/bootstrap.js && npm start
     healthCheckPath: /health
     envVars:
       # --- Non-secret defaults ---

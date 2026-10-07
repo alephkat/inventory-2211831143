@@ -92,7 +92,7 @@ export function UsersPage() {
 
   const createUser = useMutation({
     mutationFn: (payload: FormState) =>
-      api.post('/api/v1/auth/register', {
+      api.post('/api/v1/auth/register/admin', {
         username: payload.username,
         email: payload.email,
         fullName: payload.fullName,
