@@ -30,8 +30,7 @@ export const createApp = () => {
   app.use(helmet());
   app.use(
     cors({
-      origin: config.corsOrigin,
-      credentials: true,
+      origin: "https://frontend-9lfu.onrender.com",
     }),
   );
   app.use(express.json({ limit: '10mb' }));
