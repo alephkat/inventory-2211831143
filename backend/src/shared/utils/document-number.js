@@ -13,7 +13,7 @@ import { randomInt } from 'node:crypto';
 
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O, 1/I/L
 
-export const documentSuffix = (length = 6) => {
+export const documentSuffix = (documentSuffix) => {
  let out = '';
  for (let i = 0; i < length; i += 1) {
  out += ALPHABET[randomInt(ALPHABET.length)];

@@ -1,4 +1,4 @@
-import { AuditAction, Prisma } from '@prisma/client';
+import { AuditAction } from '@prisma/client';
 import { prisma } from '../config/database.js';
 
 /**
@@ -11,18 +11,28 @@ import { prisma } from '../config/database.js';
  * is not assignable to `JsonValue`. Narrowing here keeps the JSON contract
  * intact while letting callers pass plain objects.
  */
-const toJson = (value | null | undefined) =>
- (value ?? undefined) .InputJsonValue | undefined;
+const toJson = (value) =>
+ (value ?? undefined);
 
 export const createAuditLog = async (input) => {
  const db = input.client ?? prisma;
  try {
  const user = await db.user.findUnique({
- where,
- select,
+ where: { id: input.userId },
+ select: { fullName: true, username: true },
  });
  await db.auditLog.create({
- data,
+ data: {
+ userId: input.userId,
+ userName: user?.fullName || user?.username || input.userId,
+ action: input.action,
+ resourceType: input.resourceType,
+ resourceId: input.resourceId,
+ oldValues: toJson(input.oldValues),
+ newValues: toJson(input.newValues),
+ ipAddress: input.ipAddress ?? undefined,
+ userAgent: input.userAgent ?? undefined,
+ },
  });
  } catch {
  // Audit logging must never break the core operation. A dropped audit row

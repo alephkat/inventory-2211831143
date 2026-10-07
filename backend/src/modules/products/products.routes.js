@@ -67,7 +67,7 @@ productsRouter.get('/:id', requirePermission('view_inventory'), async (req, res,
 
 productsRouter.post('/', requirePermission('add_product'), validate(ProductSchema), async (req, res, next) => {
  try {
- res.status(201).json({ success: true, data: await productService.create(req.body, req.user!.id) });
+ res.status(201).json({ success: true, data: await productService.create(req.body, req.user.id) });
  } catch (e) {
  next(e);
  }
@@ -75,7 +75,7 @@ productsRouter.post('/', requirePermission('add_product'), validate(ProductSchem
 
 productsRouter.put('/:id', requirePermission('edit_product'), validate(UpdateProductSchema), async (req, res, next) => {
  try {
- res.json({ success: true, data: await productService.update(req.params.id, req.body, req.user!.id) });
+ res.json({ success: true, data: await productService.update(req.params.id, req.body, req.user.id) });
  } catch (e) {
  next(e);
  }
@@ -83,7 +83,7 @@ productsRouter.put('/:id', requirePermission('edit_product'), validate(UpdatePro
 
 productsRouter.delete('/:id', requirePermission('delete_product'), async (req, res, next) => {
  try {
- res.json({ success: true, data: await productService.delete(req.params.id, req.user!.id) });
+ res.json({ success: true, data: await productService.delete(req.params.id, req.user.id) });
  } catch (e) {
  next(e);
  }

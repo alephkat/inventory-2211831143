@@ -74,7 +74,7 @@ purchaseOrdersRouter.get('/:id', requirePermission('view_inventory'), async (req
 
 purchaseOrdersRouter.post('/', requirePermission('manage_purchase_orders'), validate(CreatePOSchema), async (req, res, next) => {
  try {
- res.status(201).json({ success: true, data: await purchaseOrderService.create(req.body, req.user!.id) });
+ res.status(201).json({ success: true, data: await purchaseOrderService.create(req.body, req.user.id) });
  } catch (e) {
  next(e);
  }
@@ -82,7 +82,7 @@ purchaseOrdersRouter.post('/', requirePermission('manage_purchase_orders'), vali
 
 purchaseOrdersRouter.post('/items/:id', requirePermission('manage_purchase_orders'), validate(AddItemSchema), async (req, res, next) => {
  try {
- res.json({ success: true, data: await purchaseOrderService.addItem(req.params.id, req.body, req.user!.id) });
+ res.json({ success: true, data: await purchaseOrderService.addItem(req.params.id, req.body, req.user.id) });
  } catch (e) {
  next(e);
  }
@@ -90,7 +90,7 @@ purchaseOrdersRouter.post('/items/:id', requirePermission('manage_purchase_order
 
 purchaseOrdersRouter.delete('/items/:id/:itemId', requirePermission('manage_purchase_orders'), async (req, res, next) => {
  try {
- res.json({ success: true, data: await purchaseOrderService.removeItem(req.params.id, req.params.itemId, req.user!.id) });
+ res.json({ success: true, data: await purchaseOrderService.removeItem(req.params.id, req.params.itemId, req.user.id) });
  } catch (e) {
  next(e);
  }
@@ -98,7 +98,7 @@ purchaseOrdersRouter.delete('/items/:id/:itemId', requirePermission('manage_purc
 
 purchaseOrdersRouter.post('/:id/submit', requirePermission('approve_transactions'), async (req, res, next) => {
  try {
- res.json({ success: true, data: await purchaseOrderService.submit(req.params.id, req.user!.id) });
+ res.json({ success: true, data: await purchaseOrderService.submit(req.params.id, req.user.id) });
  } catch (e) {
  next(e);
  }
@@ -106,7 +106,7 @@ purchaseOrdersRouter.post('/:id/submit', requirePermission('approve_transactions
 
 purchaseOrdersRouter.post('/:id/approve', requirePermission('approve_transactions'), async (req, res, next) => {
  try {
- res.json({ success: true, data: await purchaseOrderService.approve(req.params.id, req.user!.id) });
+ res.json({ success: true, data: await purchaseOrderService.approve(req.params.id, req.user.id) });
  } catch (e) {
  next(e);
  }
@@ -114,7 +114,7 @@ purchaseOrdersRouter.post('/:id/approve', requirePermission('approve_transaction
 
 purchaseOrdersRouter.post('/:id/reject', requirePermission('approve_transactions'), validate(RejectSchema), async (req, res, next) => {
  try {
- res.json({ success: true, data: await purchaseOrderService.reject(req.params.id, req.user!.id, req.body.rejectionReason) });
+ res.json({ success: true, data: await purchaseOrderService.reject(req.params.id, req.user.id, req.body.rejectionReason) });
  } catch (e) {
  next(e);
  }
@@ -122,7 +122,7 @@ purchaseOrdersRouter.post('/:id/reject', requirePermission('approve_transactions
 
 purchaseOrdersRouter.post('/:id/receive', requirePermission('receive_stock'), validate(ReceiveSchema), async (req, res, next) => {
  try {
- res.json({ success: true, data: await purchaseOrderService.receive(req.params.id, req.user!.id, req.body) });
+ res.json({ success: true, data: await purchaseOrderService.receive(req.params.id, req.user.id, req.body) });
  } catch (e) {
  next(e);
  }
@@ -130,7 +130,7 @@ purchaseOrdersRouter.post('/:id/receive', requirePermission('receive_stock'), va
 
 purchaseOrdersRouter.post('/:id/cancel', requirePermission('manage_purchase_orders'), validate(CancelSchema), async (req, res, next) => {
  try {
- res.json({ success: true, data: await purchaseOrderService.cancel(req.params.id, req.user!.id, req.body.reason) });
+ res.json({ success: true, data: await purchaseOrderService.cancel(req.params.id, req.user.id, req.body.reason) });
  } catch (e) {
  next(e);
  }

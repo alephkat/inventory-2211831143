@@ -43,7 +43,7 @@ salesOrdersRouter.get('/:id', requirePermission('manage_sales_orders'), async (r
 
 salesOrdersRouter.post('/', requirePermission('manage_sales_orders'), validate(CreateSOSchema), async (req, res, next) => {
  try {
- res.status(201).json({ success: true, data: await salesOrderService.create(req.body, req.user!.id) });
+ res.status(201).json({ success: true, data: await salesOrderService.create(req.body, req.user.id) });
  } catch (e) {
  next(e);
  }
@@ -51,7 +51,7 @@ salesOrdersRouter.post('/', requirePermission('manage_sales_orders'), validate(C
 
 salesOrdersRouter.post('/items/:id', requirePermission('manage_sales_orders'), validate(AddItemSchema), async (req, res, next) => {
  try {
- res.json({ success: true, data: await salesOrderService.addItem(req.params.id, req.body, req.user!.id) });
+ res.json({ success: true, data: await salesOrderService.addItem(req.params.id, req.body, req.user.id) });
  } catch (e) {
  next(e);
  }
@@ -59,7 +59,7 @@ salesOrdersRouter.post('/items/:id', requirePermission('manage_sales_orders'), v
 
 salesOrdersRouter.delete('/items/:id/:itemId', requirePermission('manage_sales_orders'), async (req, res, next) => {
  try {
- res.json({ success: true, data: await salesOrderService.removeItem(req.params.id, req.params.itemId, req.user!.id) });
+ res.json({ success: true, data: await salesOrderService.removeItem(req.params.id, req.params.itemId, req.user.id) });
  } catch (e) {
  next(e);
  }
@@ -67,7 +67,7 @@ salesOrdersRouter.delete('/items/:id/:itemId', requirePermission('manage_sales_o
 
 salesOrdersRouter.post('/:id/submit', requirePermission('approve_transactions'), async (req, res, next) => {
  try {
- res.json({ success: true, data: await salesOrderService.submit(req.params.id, req.user!.id) });
+ res.json({ success: true, data: await salesOrderService.submit(req.params.id, req.user.id) });
  } catch (e) {
  next(e);
  }
@@ -75,7 +75,7 @@ salesOrdersRouter.post('/:id/submit', requirePermission('approve_transactions'),
 
 salesOrdersRouter.post('/:id/approve', requirePermission('approve_transactions'), async (req, res, next) => {
  try {
- res.json({ success: true, data: await salesOrderService.approve(req.params.id, req.user!.id) });
+ res.json({ success: true, data: await salesOrderService.approve(req.params.id, req.user.id) });
  } catch (e) {
  next(e);
  }
@@ -84,7 +84,7 @@ salesOrdersRouter.post('/:id/approve', requirePermission('approve_transactions')
 salesOrdersRouter.post('/:id/issue', requirePermission('issue_stock'), async (req, res, next) => {
  try {
  const items = Array.isArray(req.body.items) ? req.body.items : [{ itemId: req.body.itemId, quantity: req.body.quantity }];
- res.json({ success: true, data: await salesOrderService.issue(req.params.id, req.user!.id, items) });
+ res.json({ success: true, data: await salesOrderService.issue(req.params.id, req.user.id, items) });
  } catch (e) {
  next(e);
  }
@@ -92,7 +92,7 @@ salesOrdersRouter.post('/:id/issue', requirePermission('issue_stock'), async (re
 
 salesOrdersRouter.post('/:id/ship', requirePermission('manage_sales_orders'), async (req, res, next) => {
  try {
- res.json({ success: true, data: await salesOrderService.ship(req.params.id, req.user!.id) });
+ res.json({ success: true, data: await salesOrderService.ship(req.params.id, req.user.id) });
  } catch (e) {
  next(e);
  }
@@ -100,7 +100,7 @@ salesOrdersRouter.post('/:id/ship', requirePermission('manage_sales_orders'), as
 
 salesOrdersRouter.post('/:id/deliver', requirePermission('manage_sales_orders'), async (req, res, next) => {
  try {
- res.json({ success: true, data: await salesOrderService.deliver(req.params.id, req.user!.id) });
+ res.json({ success: true, data: await salesOrderService.deliver(req.params.id, req.user.id) });
  } catch (e) {
  next(e);
  }
@@ -108,7 +108,7 @@ salesOrdersRouter.post('/:id/deliver', requirePermission('manage_sales_orders'),
 
 salesOrdersRouter.post('/:id/cancel', requirePermission('manage_sales_orders'), async (req, res, next) => {
  try {
- res.json({ success: true, data: await salesOrderService.cancel(req.params.id, req.user!.id) });
+ res.json({ success: true, data: await salesOrderService.cancel(req.params.id, req.user.id) });
  } catch (e) {
  next(e);
  }

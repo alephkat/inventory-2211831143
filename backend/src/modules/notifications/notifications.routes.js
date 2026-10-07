@@ -24,7 +24,7 @@ notificationsRouter.get(
  asyncHandler(async (req, res) => {
  const query = req.query as unknown as z.infer<typeof ListSchema>;
  const { page, limit } = getPagination(query);
- const result = await notificationService.list(req.user!.id, {
+ const result = await notificationService.list(req.user.id, {
  page,
  limit,
  isRead: query.isRead,
@@ -41,23 +41,23 @@ notificationsRouter.get(
 notificationsRouter.get(
  '/unread-count',
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await notificationService.unreadCount(req.user!.id)));
+ res.json(sendSuccess(await notificationService.unreadCount(req.user.id)));
  }));
 
 notificationsRouter.post(
  '/:id/read',
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await notificationService.markRead(req.params.id, req.user!.id)));
+ res.json(sendSuccess(await notificationService.markRead(req.params.id, req.user.id)));
  }));
 
 notificationsRouter.post(
  '/read-all',
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await notificationService.markAllRead(req.user!.id)));
+ res.json(sendSuccess(await notificationService.markAllRead(req.user.id)));
  }));
 
 notificationsRouter.delete(
  '/:id',
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await notificationService.remove(req.params.id, req.user!.id)));
+ res.json(sendSuccess(await notificationService.remove(req.params.id, req.user.id)));
  }));

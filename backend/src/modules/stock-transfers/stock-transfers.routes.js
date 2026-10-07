@@ -87,14 +87,14 @@ stockTransfersRouter.post(
  requirePermission('transfer_stock'),
  validate(CreateTransferSchema),
  asyncHandler(async (req, res) => {
- res.status(201).json(sendSuccess(await stockTransferService.create(req.body, req.user!.id)));
+ res.status(201).json(sendSuccess(await stockTransferService.create(req.body, req.user.id)));
  }));
 
 stockTransfersRouter.post(
  '/:id/approve',
  requirePermission('approve_transactions'),
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await stockTransferService.approve(req.params.id, req.user!.id)));
+ res.json(sendSuccess(await stockTransferService.approve(req.params.id, req.user.id)));
  }));
 
 /** Dispatch is what actually removes stock from the source warehouse. */
@@ -102,14 +102,14 @@ stockTransfersRouter.post(
  '/:id/dispatch',
  requirePermission('transfer_stock'),
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await stockTransferService.dispatch(req.params.id, req.user!.id)));
+ res.json(sendSuccess(await stockTransferService.dispatch(req.params.id, req.user.id)));
  }));
 
 stockTransfersRouter.post(
  '/:id/in-transit',
  requirePermission('transfer_stock'),
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await stockTransferService.markInTransit(req.params.id, req.user!.id)));
+ res.json(sendSuccess(await stockTransferService.markInTransit(req.params.id, req.user.id)));
  }));
 
 stockTransfersRouter.post(
@@ -117,7 +117,7 @@ stockTransfersRouter.post(
  requirePermission('transfer_stock'),
  validate(ReceiveSchema),
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await stockTransferService.receive(req.params.id, req.user!.id, req.body)));
+ res.json(sendSuccess(await stockTransferService.receive(req.params.id, req.user.id, req.body)));
  }));
 
 /** Confirmation books the goods in at the destination. */
@@ -125,7 +125,7 @@ stockTransfersRouter.post(
  '/:id/confirm',
  requirePermission('transfer_stock'),
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await stockTransferService.confirm(req.params.id, req.user!.id)));
+ res.json(sendSuccess(await stockTransferService.confirm(req.params.id, req.user.id)));
  }));
 
 stockTransfersRouter.post(
@@ -135,7 +135,7 @@ stockTransfersRouter.post(
  asyncHandler(async (req, res) => {
  const { reason, rejectionReason } = req.body;
  res.json(
- sendSuccess(await stockTransferService.reject(req.params.id, req.user!.id, reason ?? rejectionReason)));
+ sendSuccess(await stockTransferService.reject(req.params.id, req.user.id, reason ?? rejectionReason)));
  }));
 
 stockTransfersRouter.post(
@@ -144,5 +144,5 @@ stockTransfersRouter.post(
  validate(ReasonSchema),
  asyncHandler(async (req, res) => {
  res.json(
- sendSuccess(await stockTransferService.cancel(req.params.id, req.user!.id, req.body.reason)));
+ sendSuccess(await stockTransferService.cancel(req.params.id, req.user.id, req.body.reason)));
  }));

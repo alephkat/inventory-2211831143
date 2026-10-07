@@ -127,7 +127,7 @@ export const allWorkflows = {
 } as const;
 
 /** Guard used by every approve/reject endpoint: a reason is mandatory. */
-export const assertRejectionReason = (reason | undefined | null) => {
+export const assertRejectionReason = (assertRejectionReason) => {
  const trimmed = reason?.trim();
  if (!trimmed) {
  throw ApiError.badRequest('A reason is required when rejecting or cancelling a workflow');

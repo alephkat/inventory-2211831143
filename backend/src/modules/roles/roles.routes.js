@@ -37,7 +37,7 @@ rolesRouter.get('/:id', async (req, res, next) => {
 
 rolesRouter.post('/', validate(CreateRoleSchema), async (req, res, next) => {
  try {
- const role = await roleService.create(req.body, req.user!.id);
+ const role = await roleService.create(req.body, req.user.id);
  res.status(201).json({ success: true, data: role, message: 'Role created', meta: null });
  } catch (e) {
  next(e);
@@ -49,7 +49,7 @@ rolesRouter.post('/:id/permissions', validate(AssignPermsSchema), async (req, re
  // Older clients send `permissionIds`; the service works in permission
  // values so that a typo can be reported instead of silently ignored.
  const values = req.body.permissionValues ?? req.body.permissionIds;
- const role = await roleService.assignPermissions(req.params.id, values, req.user!.id);
+ const role = await roleService.assignPermissions(req.params.id, values, req.user.id);
  res.json({ success: true, data: role, message: 'Permissions assigned', meta: null });
  } catch (e) {
  next(e);

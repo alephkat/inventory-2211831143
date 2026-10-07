@@ -1,8 +1,7 @@
 /**
  * Validate request payload against a Zod schema.
  */
-export const validate =
- (schema, where: 'body' | 'query' | 'params' = 'body') =>
+export const validate = (validate) =>
  (req, res, next) => {
  const result = schema.safeParse(req[where]);
  if (!result.success) {

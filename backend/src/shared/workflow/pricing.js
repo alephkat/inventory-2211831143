@@ -13,7 +13,7 @@ import { round2 } from './guards.js';
  * line total = line taxable + line tax
  */
 
-export const priceLine = (input) => {
+export const priceLine = (priceLine) => {
  const discountPercent = input.discountPercent ?? 0;
  const taxPercent = input.taxPercent ?? 0;
  const subtotal = round2(input.quantity * input.unitPrice);
@@ -33,7 +33,7 @@ export const priceLine = (input) => {
  };
 };
 
-export const sumLines = (lines: PricedLine[]) => {
+export const sumLines = (sumLines) => {
  const totals = lines.reduce(
  (acc, line) => ({
  subtotal: round2(acc.subtotal + line.subtotal),
@@ -49,7 +49,7 @@ export const sumLines = (lines: PricedLine[]) => {
  return totals;
 };
 
-export const priceLines = (lines: PricedLineInput[])=> {
+export const priceLines = (priceLines) => {
  const priced = lines.map(priceLine);
  return { priced, totals: sumLines(priced) };
 };

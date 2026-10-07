@@ -409,7 +409,7 @@ export class StockCountService {
  return { totalVarianceValue: round2(total) };
  }
 
- async productCosts(itemIds[])> {
+ async productCosts(itemIds)> {
  const items = await prisma.stockCountItem.findMany({
  where},
  select} },

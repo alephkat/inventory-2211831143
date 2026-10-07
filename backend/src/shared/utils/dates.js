@@ -9,7 +9,7 @@
  */
 
 /** Renders a date as `YYYY-MM-DD` using the runtime's local calendar. */
-export const localDayKey = (date) =>
+export const localDayKey = (localDayKey) =>
  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
 /**
@@ -17,7 +17,7 @@ export const localDayKey = (date) =>
  * calendar days that end today. Pass this to the query so the result set stays
  * bounded, and to {@link bucketMovementsByLocalDay} so both agree on the window.
  */
-export const localDayWindow = (days)=> {
+export const localDayWindow = (localDayWindow) => {
  const from = new Date();
  from.setHours(0, 0, 0, 0);
  from.setDate(from.getDate() - (days - 1));
@@ -38,10 +38,7 @@ export const localDayWindow = (days)=> {
  * without guarding. Rows falling outside the window are dropped, which keeps
  * the helper safe to use with an over-broad query.
  */
-export const bucketMovementsByLocalDay = (
- rows,
- seriesNames[],
- days) => {
+export const bucketMovementsByLocalDay = (bucketMovementsByLocalDay) => {
  const { from, until } = localDayWindow(days);
 
  const labels[] = [];

@@ -33,7 +33,7 @@ const AUDIT_ACTIONS>>> = {
  supplier,
 };
 
-export const auditActionFor = (workflow, to) =>
+export const auditActionFor = (auditActionFor) =>
  AUDIT_ACTIONS[workflow][to] ?? 'UPDATE';
 
 const defined = (value) => {
@@ -49,7 +49,7 @@ const defined = (value) => {
  * and any reason are always recorded, so a reviewer can reconstruct the exact
  * path a document took without joining against other tables.
  */
-export const buildTransitionAudit = (input) => ({
+export const buildTransitionAudit = (buildTransitionAudit) => ({
  action: auditActionFor(input.workflow, input.to),
  resourceType_RESOURCE[input.workflow],
  resourceId: input.resourceId,

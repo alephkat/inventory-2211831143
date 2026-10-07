@@ -47,7 +47,7 @@ transactionsRouter.post(
  validate(CreateTxSchema),
  async (req, res, next) => {
  try {
- res.status(201).json({ success: true, data: await transactionService.create(req.body, req.user!.id) });
+ res.status(201).json({ success: true, data: await transactionService.create(req.body, req.user.id) });
  } catch (e) {
  next(e);
  }
@@ -55,7 +55,7 @@ transactionsRouter.post(
 
 transactionsRouter.post('/:id/approve', requirePermission('approve_transactions'), async (req, res, next) => {
  try {
- res.json({ success: true, data: await transactionService.approve(req.params.id, req.user!.id) });
+ res.json({ success: true, data: await transactionService.approve(req.params.id, req.user.id) });
  } catch (e) {
  next(e);
  }
@@ -63,7 +63,7 @@ transactionsRouter.post('/:id/approve', requirePermission('approve_transactions'
 
 transactionsRouter.post('/:id/reject', requirePermission('approve_transactions'), validate(ApproveSchema), async (req, res, next) => {
  try {
- res.json({ success: true, data: await transactionService.reject(req.params.id, req.user!.id, req.body.rejectionReason) });
+ res.json({ success: true, data: await transactionService.reject(req.params.id, req.user.id, req.body.rejectionReason) });
  } catch (e) {
  next(e);
  }

@@ -28,11 +28,11 @@ customersRouter.get('/:id', async (req, res, next) => {
  try { res.json({ success: true, data: await customerService.get(req.params.id) }); } catch (e) { next(e); }
 });
 customersRouter.post('/', validate(CustomerSchema), async (req, res, next) => {
- try { res.status(201).json({ success: true, data: await customerService.create(req.body, req.user!.id) }); } catch (e) { next(e); }
+ try { res.status(201).json({ success: true, data: await customerService.create(req.body, req.user.id) }); } catch (e) { next(e); }
 });
 customersRouter.put('/:id', validate(UpdateCustomerSchema), async (req, res, next) => {
  try { res.json({ success: true, data: await customerService.update(req.params.id, req.body) }); } catch (e) { next(e); }
 });
 customersRouter.delete('/:id', async (req, res, next) => {
- try { res.json({ success: true, data: await customerService.delete(req.params.id, req.user!.id) }); } catch (e) { next(e); }
+ try { res.json({ success: true, data: await customerService.delete(req.params.id, req.user.id) }); } catch (e) { next(e); }
 });

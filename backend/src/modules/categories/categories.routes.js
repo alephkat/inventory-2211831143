@@ -28,7 +28,7 @@ categoriesRouter.get('/:id', requirePermission('view_inventory'), async (req, re
 });
 
 categoriesRouter.post('/', requirePermission('manage_categories'), validate(CategorySchema), async (req, res, next) => {
- try { res.status(201).json({ success: true, data: await categoryService.create(req.body, req.user!.id) }); } catch (e) { next(e); }
+ try { res.status(201).json({ success: true, data: await categoryService.create(req.body, req.user.id) }); } catch (e) { next(e); }
 });
 
 categoriesRouter.put('/:id', requirePermission('manage_categories'), validate(UpdateCategorySchema), async (req, res, next) => {
@@ -36,5 +36,5 @@ categoriesRouter.put('/:id', requirePermission('manage_categories'), validate(Up
 });
 
 categoriesRouter.delete('/:id', requirePermission('manage_categories'), async (req, res, next) => {
- try { res.json({ success: true, data: await categoryService.delete(req.params.id, req.user!.id) }); } catch (e) { next(e); }
+ try { res.json({ success: true, data: await categoryService.delete(req.params.id, req.user.id) }); } catch (e) { next(e); }
 });

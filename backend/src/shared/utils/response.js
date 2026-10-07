@@ -32,7 +32,7 @@ export function sendPaginated(
  * would otherwise reach Prisma as a broken `skip`.
  */
 const toPositiveInt = (
- value | number | string[] | undefined,
+ value | number | string | undefined,
  fallback,
  max?) => {
  const raw = Array.isArray(value) ? value[0] : value;

@@ -82,7 +82,7 @@ export class NotificationService {
  * stock receipts" rather than hard-coding a role name.
  */
  async dispatchToPermissions(
- permissions[],
+ permissions,
  input) {
  if (permissions.length === 0) return 0;
 

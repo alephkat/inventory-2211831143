@@ -20,7 +20,7 @@ import { authRouter } from './modules/auth/auth.routes.js';
 const WEB_DIST = path.resolve(__dirname, '../../frontend/dist');
 const hasWebBuild = fs.existsSync(path.join(WEB_DIST, 'index.html'));
 
-export const createApp = () => {
+export const createApp = (createApp) => {
  const app = express();
 
  if (!config.isProduction) {

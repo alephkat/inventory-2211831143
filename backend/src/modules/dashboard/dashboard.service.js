@@ -3,7 +3,7 @@ import { bucketMovementsByLocalDay, localDayWindow } from '../../shared/utils/da
 import { Prisma, TransactionStatus, TransactionType, TransferStatus } from '@prisma/client';
 
 export class DashboardService {
- async stats(warehouseId?) {
+ async stats(warehouseId {
  const todayStart = new Date();
  todayStart.setHours(0, 0, 0, 0);
 
@@ -91,7 +91,7 @@ export class DashboardService {
  productName: p.name,
  sku: p.sku,
  expiryDate: p.expiryDate,
- daysUntilExpiry.ceil((p.expiryDate!.getTime() - Date.now()) / (24 * 60 * 60 * 1000)),
+ daysUntilExpiry.ceil((p.expiryDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000)),
  currentStock: 0,
  warehouseName: p.warehouse?.name ?? '',
  })),
@@ -120,7 +120,7 @@ export class DashboardService {
  return { received: series.RECEIVED, issued: series.ISSUED, labels };
  }
 
- async inventoryValueChart(warehouseId?) {
+ async inventoryValueChart(warehouseId {
  const rows = await prisma.$queryRaw<
  Array<{ label; value }>
  >`
@@ -136,7 +136,7 @@ export class DashboardService {
  return { data: rows, labels: rows.map((r) => r.label) };
  }
 
- async countLowStock(warehouseId?) {
+ async countLowStock(warehouseId {
  const wh = warehouseId ? Prisma.sql`AND i."warehouseId" = ${warehouseId}` .empty;
  const res = await prisma.$queryRaw<
  Array<{ count }>
@@ -144,7 +144,7 @@ export class DashboardService {
  return Number(res[0]?.count ?? 0);
  }
 
- async countOutOfStock(warehouseId?) {
+ async countOutOfStock(warehouseId {
  const wh = warehouseId ? Prisma.sql`AND i."warehouseId" = ${warehouseId}` .empty;
  const res = await prisma.$queryRaw<
  Array<{ count }>
@@ -152,7 +152,7 @@ export class DashboardService {
  return Number(res[0]?.count ?? 0);
  }
 
- async lowStockList(warehouseId?) {
+ async lowStockList(warehouseId {
  const rows = await prisma.$queryRaw<Array<{ productId; productName; sku; currentStock; reorderLevel; warehouseName }>>`
  SELECT i."productId", p."name" AS "productName", p."sku", i."currentQuantity"::float AS "currentStock",
  COALESCE(i."reorderQuantity", p."reorderLevel", 0)::float AS "reorderLevel", w."name" AS "warehouseName"

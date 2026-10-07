@@ -56,7 +56,7 @@ usersRouter.put('/:id', validate(UpdateUserSchema), async (req, res, next) => {
 
 usersRouter.delete('/:id', async (req, res, next) => {
  try {
- send(res, await userService.delete(req.params.id, req.user!.id), 200, 'User deleted');
+ send(res, await userService.delete(req.params.id, req.user.id), 200, 'User deleted');
  } catch (e) {
  next(e);
  }

@@ -6,16 +6,17 @@ import { PERMISSIONS } from '../../shared/types/permissions.js';
 export class RoleService {
  async list() {
  return prisma.role.findMany({
- include} },
- orderBy,
+ include: { permissions: { include: { permission: true } } },
+ orderBy: { name: 'asc' },
  });
  }
 
  async get(id) {
  const role = await prisma.role.findUnique({
- where,
- include},
- _count},
+ where: { id },
+ include: {
+ permissions: { include: { permission: true } },
+ _count: { select: { users: true } },
  },
  });
  if (!role) throw ApiError.notFound('Role not found');
@@ -23,13 +24,13 @@ export class RoleService {
  }
 
  async create(data, userId) {
- const existing = await prisma.role.findUnique({ where});
+ const existing = await prisma.role.findUnique({ where: { name: data.name } });
  if (existing) throw ApiError.conflict('Role already exists');
 
  // Seed the permission catalogue alongside the role so a freshly created
  // role can be granted permissions without a separate migration step.
  await prisma.permission.createMany({
- data.map((p) => ({
+ data: PERMISSIONS.map((p) => ({
  name: p.name,
  value: p.value,
  description: p.description,
@@ -39,7 +40,7 @@ export class RoleService {
  });
 
  const role = await prisma.role.create({
- data,
+ data: { name: data.name, description: data.description },
  });
 
  await createAuditLog({
@@ -47,7 +48,7 @@ export class RoleService {
  action: 'CREATE',
  resourceType: 'role',
  resourceId: role.id,
- newValues,
+ newValues: { name: role.name, description: role.description },
  });
 
  return role;
@@ -58,7 +59,7 @@ export class RoleService {
  * dropped: a typo in a permission name would otherwise quietly leave the
  * role under-privileged with no error to notice.
  */
- async assignPermissions(roleId, permissionValues[], userId) {
+ async assignPermissions(roleId, permissionValues, userId) {
  await this.get(roleId);
 
  const known = PERMISSIONS.map((p) => p.value);
@@ -68,21 +69,22 @@ export class RoleService {
  }
 
  const perms = await prisma.permission.findMany({
- where},
+ where: { value: { in: permissionValues } },
  });
  const missing = permissionValues.filter((value) => !perms.some((p) => p.value === value));
  if (missing.length > 0) {
  throw ApiError.conflict(
- `These permissions are not registered yet: ${missing.join(', ')}. Create the role once to seed the catalogue.`);
+ `These permissions are not registered yet: ${missing.join(', ')}. Create the role once to seed the catalogue.`,
+ );
  }
 
  const before = await prisma.rolePermission.findMany({
- where,
- include} },
+ where: { roleId },
+ include: { permission: { select: { value: true } } },
  });
 
  await prisma.$transaction(async (tx) => {
- await tx.rolePermission.deleteMany({ where});
+ await tx.rolePermission.deleteMany({ where: { roleId } });
  if (perms.length > 0) {
  await tx.rolePermission.createMany({
  data: perms.map((p) => ({ roleId, permissionId: p.id })),
@@ -95,8 +97,8 @@ export class RoleService {
  action: 'UPDATE',
  resourceType: 'role',
  resourceId: roleId,
- oldValues,
- newValues,
+ oldValues: { permissions: before.map((row) => row.permission.value).sort() },
+ newValues: { permissions: [...permissionValues].sort() },
  });
 
  return this.get(roleId);

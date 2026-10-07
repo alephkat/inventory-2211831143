@@ -142,7 +142,7 @@ export class ReportService {
  }
 
  /** Serialize a report row set to CSV. */
- toCsv(rows[]) {
+ toCsv(rows) {
  if (!rows.length) return '';
  const headers = Object.keys(rows[0]);
  const escape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;

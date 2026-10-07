@@ -28,11 +28,11 @@ warehousesRouter.get('/:id', async (req, res, next) => {
  try { res.json({ success: true, data: await warehouseService.get(req.params.id) }); } catch (e) { next(e); }
 });
 warehousesRouter.post('/', validate(WarehouseSchema), async (req, res, next) => {
- try { res.status(201).json({ success: true, data: await warehouseService.create(req.body, req.user!.id) }); } catch (e) { next(e); }
+ try { res.status(201).json({ success: true, data: await warehouseService.create(req.body, req.user.id) }); } catch (e) { next(e); }
 });
 warehousesRouter.put('/:id', validate(UpdateWarehouseSchema), async (req, res, next) => {
  try { res.json({ success: true, data: await warehouseService.update(req.params.id, req.body) }); } catch (e) { next(e); }
 });
 warehousesRouter.delete('/:id', async (req, res, next) => {
- try { res.json({ success: true, data: await warehouseService.delete(req.params.id, req.user!.id) }); } catch (e) { next(e); }
+ try { res.json({ success: true, data: await warehouseService.delete(req.params.id, req.user.id) }); } catch (e) { next(e); }
 });

@@ -83,14 +83,14 @@ stockIssuesRouter.post(
  requirePermission('issue_stock'),
  validate(CreateIssueSchema),
  asyncHandler(async (req, res) => {
- res.status(201).json(sendSuccess(await stockIssueService.create(req.body, req.user!.id)));
+ res.status(201).json(sendSuccess(await stockIssueService.create(req.body, req.user.id)));
  }));
 
 stockIssuesRouter.post(
  '/:id/approve',
  requirePermission('approve_stock_issues'),
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await stockIssueService.approve(req.params.id, req.user!.id)));
+ res.json(sendSuccess(await stockIssueService.approve(req.params.id, req.user.id)));
  }));
 
 /** Removes stock from the warehouse. */
@@ -99,7 +99,7 @@ stockIssuesRouter.post(
  requirePermission('issue_stock'),
  validate(IssueStockSchema),
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await stockIssueService.issue(req.params.id, req.user!.id, req.body)));
+ res.json(sendSuccess(await stockIssueService.issue(req.params.id, req.user.id, req.body)));
  }));
 
 /** Issues beyond the requested quantity; requires `override_stock_issue`. */
@@ -109,7 +109,7 @@ stockIssuesRouter.post(
  validate(z.object({ reason: z.string().min(1, 'An override reason is required') })),
  asyncHandler(async (req, res) => {
  res.json(
- sendSuccess(await stockIssueService.override(req.params.id, req.user!.id, req.body.reason)));
+ sendSuccess(await stockIssueService.override(req.params.id, req.user.id, req.body.reason)));
  }));
 
 stockIssuesRouter.post(
@@ -119,7 +119,7 @@ stockIssuesRouter.post(
  asyncHandler(async (req, res) => {
  const { reason, rejectionReason } = req.body;
  res.json(
- sendSuccess(await stockIssueService.reject(req.params.id, req.user!.id, reason ?? rejectionReason)));
+ sendSuccess(await stockIssueService.reject(req.params.id, req.user.id, reason ?? rejectionReason)));
  }));
 
 stockIssuesRouter.post(
@@ -127,5 +127,5 @@ stockIssuesRouter.post(
  requirePermission('issue_stock'),
  validate(ReasonSchema),
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await stockIssueService.cancel(req.params.id, req.user!.id, req.body.reason)));
+ res.json(sendSuccess(await stockIssueService.cancel(req.params.id, req.user.id, req.body.reason)));
  }));

@@ -99,7 +99,7 @@ stockCountsRouter.post(
  requirePermission('count_stock'),
  validate(CreateCountSchema),
  asyncHandler(async (req, res) => {
- res.status(201).json(sendSuccess(await stockCountService.create(req.body, req.user!.id)));
+ res.status(201).json(sendSuccess(await stockCountService.create(req.body, req.user.id)));
  }));
 
 /** Snapshot the warehouse and begin counting. */
@@ -107,7 +107,7 @@ stockCountsRouter.post(
  '/:id/start',
  requirePermission('count_stock'),
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await stockCountService.start(req.params.id, req.user!.id)));
+ res.json(sendSuccess(await stockCountService.start(req.params.id, req.user.id)));
  }));
 
 stockCountsRouter.post(
@@ -115,21 +115,21 @@ stockCountsRouter.post(
  requirePermission('count_stock'),
  validate(RecordLinesSchema),
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await stockCountService.recordLines(req.params.id, req.user!.id, req.body)));
+ res.json(sendSuccess(await stockCountService.recordLines(req.params.id, req.user.id, req.body)));
  }));
 
 stockCountsRouter.post(
  '/:id/complete',
  requirePermission('count_stock'),
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await stockCountService.complete(req.params.id, req.user!.id)));
+ res.json(sendSuccess(await stockCountService.complete(req.params.id, req.user.id)));
  }));
 
 stockCountsRouter.post(
  '/:id/review',
  requirePermission('approve_stock_counts'),
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await stockCountService.review(req.params.id, req.user!.id)));
+ res.json(sendSuccess(await stockCountService.review(req.params.id, req.user.id)));
  }));
 
 stockCountsRouter.post(
@@ -137,7 +137,7 @@ stockCountsRouter.post(
  requirePermission('approve_stock_counts'),
  validate(ApproveSchema),
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await stockCountService.approve(req.params.id, req.user!.id, req.body)));
+ res.json(sendSuccess(await stockCountService.approve(req.params.id, req.user.id, req.body)));
  }));
 
 /** Posting is what actually moves the stock balances. */
@@ -146,7 +146,7 @@ stockCountsRouter.post(
  requirePermission('approve_stock_counts'),
  validate(PostSchema),
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await stockCountService.post(req.params.id, req.user!.id, req.body)));
+ res.json(sendSuccess(await stockCountService.post(req.params.id, req.user.id, req.body)));
  }));
 
 stockCountsRouter.post(
@@ -156,7 +156,7 @@ stockCountsRouter.post(
  asyncHandler(async (req, res) => {
  const { reason, rejectionReason } = req.body;
  res.json(
- sendSuccess(await stockCountService.reject(req.params.id, req.user!.id, reason ?? rejectionReason)));
+ sendSuccess(await stockCountService.reject(req.params.id, req.user.id, reason ?? rejectionReason)));
  }));
 
 stockCountsRouter.post(
@@ -164,5 +164,5 @@ stockCountsRouter.post(
  requirePermission('count_stock'),
  validate(ReasonSchema),
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await stockCountService.cancel(req.params.id, req.user!.id, req.body.reason)));
+ res.json(sendSuccess(await stockCountService.cancel(req.params.id, req.user.id, req.body.reason)));
  }));

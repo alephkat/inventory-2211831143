@@ -23,7 +23,7 @@ const valueFor = (quantity, costPrice) => round2(quantity * costPrice);
 
 export const applyStockMovements = async (
  tx.TransactionClient,
- movements: StockMovement[]) => {
+ movements: StockMovement) => {
  const applied = [];
 
  for (const movement of movements) {
@@ -92,7 +92,7 @@ export const applyStockMovements = async (
  */
 export const findLowStockAlerts = async (
  tx.TransactionClient,
- movements: StockMovement[])> => {
+ movements: StockMovement)> => {
  const alerts = [];
 
  const seen = new Set<string>();

@@ -92,7 +92,7 @@ suppliersRouter.post(
  '/',
  validate(CreateSupplierSchema),
  asyncHandler(async (req, res) => {
- const created = await supplierService.create(req.body, req.user!.id);
+ const created = await supplierService.create(req.body, req.user.id);
  res.status(201).json(sendSuccess(created, 'Supplier submitted for approval'));
  }));
 
@@ -100,13 +100,13 @@ suppliersRouter.put(
  '/:id',
  validate(UpdateSupplierSchema),
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await supplierService.update(req.params.id, req.body, req.user!.id)));
+ res.json(sendSuccess(await supplierService.update(req.params.id, req.body, req.user.id)));
  }));
 
 suppliersRouter.delete(
  '/:id',
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await supplierService.remove(req.params.id, req.user!.id), 'Supplier deleted'));
+ res.json(sendSuccess(await supplierService.remove(req.params.id, req.user.id), 'Supplier deleted'));
  }));
 
 suppliersRouter.get(
@@ -121,14 +121,14 @@ suppliersRouter.put(
  asyncHandler(async (req, res) => {
  res.json(
  sendSuccess(
- await supplierService.setProducts(req.params.id, req.body, req.user!.id),
+ await supplierService.setProducts(req.params.id, req.body, req.user.id),
  'Supplier catalogue updated'));
  }));
 
 suppliersRouter.post(
  '/:id/approve',
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await supplierService.approve(req.params.id, req.user!.id), 'Supplier approved'));
+ res.json(sendSuccess(await supplierService.approve(req.params.id, req.user.id), 'Supplier approved'));
  }));
 
 suppliersRouter.post(
@@ -136,7 +136,7 @@ suppliersRouter.post(
  validate(ReasonSchema),
  asyncHandler(async (req, res) => {
  const reason = req.body.rejectionReason ?? req.body.reason;
- res.json(sendSuccess(await supplierService.reject(req.params.id, req.user!.id, reason), 'Supplier rejected'));
+ res.json(sendSuccess(await supplierService.reject(req.params.id, req.user.id, reason), 'Supplier rejected'));
  }));
 
 suppliersRouter.post(
@@ -144,13 +144,13 @@ suppliersRouter.post(
  validate(ReasonSchema),
  asyncHandler(async (req, res) => {
  const reason = req.body.reason ?? req.body.rejectionReason;
- res.json(sendSuccess(await supplierService.deactivate(req.params.id, req.user!.id, reason), 'Supplier deactivated'));
+ res.json(sendSuccess(await supplierService.deactivate(req.params.id, req.user.id, reason), 'Supplier deactivated'));
  }));
 
 suppliersRouter.post(
  '/:id/reactivate',
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await supplierService.reactivate(req.params.id, req.user!.id), 'Supplier reactivated'));
+ res.json(sendSuccess(await supplierService.reactivate(req.params.id, req.user.id), 'Supplier reactivated'));
  }));
 
 suppliersRouter.post(
@@ -158,11 +158,11 @@ suppliersRouter.post(
  validate(ReasonSchema),
  asyncHandler(async (req, res) => {
  const reason = req.body.reason ?? req.body.rejectionReason;
- res.json(sendSuccess(await supplierService.blacklist(req.params.id, req.user!.id, reason), 'Supplier blacklisted'));
+ res.json(sendSuccess(await supplierService.blacklist(req.params.id, req.user.id, reason), 'Supplier blacklisted'));
  }));
 
 suppliersRouter.post(
  '/:id/reinstate',
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await supplierService.reinstate(req.params.id, req.user!.id), 'Supplier reinstated for review'));
+ res.json(sendSuccess(await supplierService.reinstate(req.params.id, req.user.id), 'Supplier reinstated for review'));
  }));

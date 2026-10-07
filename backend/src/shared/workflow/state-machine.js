@@ -38,7 +38,7 @@ export const allowedNext = <S extends string>(
  from): S[] => def.transitions[from] ?? [];
 
 export const isKnownState = <S extends string>(def, state): state is S =>
- (def.states as string[]).includes(state);
+ (def.states as string).includes(state);
 
 export const isTerminal = <S extends string>(def, state) =>
  def.terminal.includes(state) || allowedNext(def, state).length === 0;

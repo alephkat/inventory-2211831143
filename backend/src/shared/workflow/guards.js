@@ -9,16 +9,16 @@ import { ApiError } from '../errors/ApiError.js';
  */
 
 /** Money and computed values are rounded to minor units to avoid float drift. */
-export const round2 = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
+export const round2 = (round2) => Math.round((value + Number.EPSILON) * 100) / 100;
 
-export const assertFiniteNumber = (value, field) => {
+export const assertFiniteNumber = (assertFiniteNumber) => {
  if (typeof value !== 'number' || !Number.isFinite(value)) {
  throw ApiError.badRequest(`${field} must be a finite number`);
  }
  return value;
 };
 
-export const assertPositiveQuantity = (value, field) => {
+export const assertPositiveQuantity = (assertPositiveQuantity) => {
  assertFiniteNumber(value, field);
  if (value <= 0) {
  throw ApiError.badRequest(`${field} must be greater than zero`);
@@ -26,7 +26,7 @@ export const assertPositiveQuantity = (value, field) => {
  return value;
 };
 
-export const assertNonNegativeQuantity = (value, field) => {
+export const assertNonNegativeQuantity = (assertNonNegativeQuantity) => {
  assertFiniteNumber(value, field);
  if (value < 0) {
  throw ApiError.badRequest(`${field} cannot be negative`);
@@ -34,7 +34,7 @@ export const assertNonNegativeQuantity = (value, field) => {
  return value;
 };
 
-export const assertNonNegativePercent = (value, field) => {
+export const assertNonNegativePercent = (assertNonNegativePercent) => {
  assertFiniteNumber(value, field);
  if (value < 0 || value > 100) {
  throw ApiError.badRequest(`${field} must be between 0 and 100`);
@@ -42,10 +42,7 @@ export const assertNonNegativePercent = (value, field) => {
  return value;
 };
 
-export const assertSufficientStock = (
- available,
- requested,
- field) => {
+export const assertSufficientStock = (assertSufficientStock) => {
  assertPositiveQuantity(requested, field);
  if (requested > available) {
  throw ApiError.conflict(
@@ -53,13 +50,13 @@ export const assertSufficientStock = (
  }
 };
 
-export const assertDistinctWarehouses = (fromId, toId) => {
+export const assertDistinctWarehouses = (assertDistinctWarehouses) => {
  if (fromId === toId) {
  throw ApiError.badRequest('Source and destination warehouses must be different');
  }
 };
 
-export const assertLinesPresent = (lines[], entity = 'Line item') => {
+export const assertLinesPresent = (assertLinesPresent) => {
  if (!Array.isArray(lines) || lines.length === 0) {
  throw ApiError.badRequest(`At least one ${entity.toLowerCase()} is required`);
  }
@@ -69,9 +66,7 @@ export const assertLinesPresent = (lines[], entity = 'Line item') => {
  * Reject repeated product lines. Two lines for the same product would make
  * the received/issued totals ambiguous and break per-line PO matching.
  */
-export const assertNoDuplicateLines = (
- lines: T[],
- keyOf: (line) => string,
+export const assertNoDuplicateLines = (assertNoDuplicateLines) => string,
  entity = 'line') => {
  const seen = new Set<string>();
  for (const line of lines) {
@@ -83,10 +78,7 @@ export const assertNoDuplicateLines = (
  }
 };
 
-export const assertWithinVarianceTolerance = (
- variancePercent,
- tolerancePercent,
- field = 'Count variance') => {
+export const assertWithinVarianceTolerance = (assertWithinVarianceTolerance) => {
  assertNonNegativePercent(tolerancePercent, 'Variance tolerance');
  if (variancePercent > tolerancePercent) {
  throw ApiError.conflict(
@@ -100,10 +92,7 @@ export const assertWithinVarianceTolerance = (
  * a 100% variance (the entire count is unexpected stock) rather than dividing
  * by zero to produce Infinity or NaN.
  */
-export const computeCountVariance = (
- systemQuantity,
- countedQuantity,
- costPrice) => {
+export const computeCountVariance = (computeCountVariance) => {
  const difference = round2(countedQuantity - systemQuantity);
  const value = round2(difference * costPrice);
  const percent = systemQuantity === 0 ? (difference === 0 ? 0 : 100) : round2((Math.abs(difference) / systemQuantity) * 100);
@@ -111,13 +100,11 @@ export const computeCountVariance = (
 };
 
 /** Quantity of a purchase-order line that is still outstanding. */
-export const remainingPurchaseQuantity = (ordered, alreadyReceived) =>
+export const remainingPurchaseQuantity = (remainingPurchaseQuantity) =>
  round2(Math.max(0, ordered - alreadyReceived));
 
 /** Every PO line fully received? Drives RECEIVED vs PARTIALLY_RECEIVED. */
-export const isFullyReceived = (
- lines) => lines.every((line) => line.receivedQuantity >= line.quantity);
+export const isFullyReceived = (isFullyReceived) => lines.every((line) => line.receivedQuantity >= line.quantity);
 
 /** Every line moved at least a little? Drives ISSUED vs PARTIALLY_ISSUED. */
-export const isFullyIssued = (
- lines) => lines.every((line) => line.issuedQuantity >= line.requestedQuantity);
+export const isFullyIssued = (isFullyIssued) => lines.every((line) => line.issuedQuantity >= line.requestedQuantity);

@@ -72,7 +72,7 @@ stockAdjustmentsRouter.post(
  requirePermission('adjust_stock'),
  validate(CreateAdjustmentSchema),
  asyncHandler(async (req, res) => {
- res.status(201).json(sendSuccess(await stockAdjustmentService.create(req.body, req.user!.id)));
+ res.status(201).json(sendSuccess(await stockAdjustmentService.create(req.body, req.user.id)));
  }));
 
 /** Approves and applies the correction in one step. */
@@ -80,7 +80,7 @@ stockAdjustmentsRouter.post(
  '/:id/approve',
  requirePermission('approve_transactions'),
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await stockAdjustmentService.approve(req.params.id, req.user!.id)));
+ res.json(sendSuccess(await stockAdjustmentService.approve(req.params.id, req.user.id)));
  }));
 
 /** Applies an already-approved correction, for separated approve/post duties. */
@@ -88,7 +88,7 @@ stockAdjustmentsRouter.post(
  '/:id/post',
  requirePermission('adjust_stock'),
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await stockAdjustmentService.post(req.params.id, req.user!.id)));
+ res.json(sendSuccess(await stockAdjustmentService.post(req.params.id, req.user.id)));
  }));
 
 stockAdjustmentsRouter.post(
@@ -99,7 +99,7 @@ stockAdjustmentsRouter.post(
  const { reason, rejectionReason } = req.body;
  res.json(
  sendSuccess(
- await stockAdjustmentService.reject(req.params.id, req.user!.id, reason ?? rejectionReason)));
+ await stockAdjustmentService.reject(req.params.id, req.user.id, reason ?? rejectionReason)));
  }));
 
 stockAdjustmentsRouter.post(
@@ -108,5 +108,5 @@ stockAdjustmentsRouter.post(
  validate(ReasonSchema),
  asyncHandler(async (req, res) => {
  res.json(
- sendSuccess(await stockAdjustmentService.cancel(req.params.id, req.user!.id, req.body.reason)));
+ sendSuccess(await stockAdjustmentService.cancel(req.params.id, req.user.id, req.body.reason)));
  }));

@@ -90,14 +90,14 @@ stockReceiptsRouter.post(
  requirePermission('manage_stock_receipts'),
  validate(CreateReceiptSchema),
  asyncHandler(async (req, res) => {
- res.status(201).json(sendSuccess(await stockReceiptService.create(req.body, req.user!.id)));
+ res.status(201).json(sendSuccess(await stockReceiptService.create(req.body, req.user.id)));
  }));
 
 stockReceiptsRouter.post(
  '/:id/approve',
  requirePermission('approve_stock_receipts'),
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await stockReceiptService.approve(req.params.id, req.user!.id)));
+ res.json(sendSuccess(await stockReceiptService.approve(req.params.id, req.user.id)));
  }));
 
 /** Books the goods into stock. */
@@ -105,7 +105,7 @@ stockReceiptsRouter.post(
  '/:id/receive',
  requirePermission('receive_stock'),
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await stockReceiptService.receive(req.params.id, req.user!.id, req.body)));
+ res.json(sendSuccess(await stockReceiptService.receive(req.params.id, req.user.id, req.body)));
  }));
 
 stockReceiptsRouter.post(
@@ -117,7 +117,7 @@ stockReceiptsRouter.post(
  sendSuccess(
  await stockReceiptService.receiveAgainstPurchaseOrder(
  req.params.purchaseOrderId,
- req.user!.id,
+ req.user.id,
  req.body)));
  }));
 
@@ -128,7 +128,7 @@ stockReceiptsRouter.post(
  asyncHandler(async (req, res) => {
  const { reason, rejectionReason } = req.body;
  res.json(
- sendSuccess(await stockReceiptService.reject(req.params.id, req.user!.id, reason ?? rejectionReason)));
+ sendSuccess(await stockReceiptService.reject(req.params.id, req.user.id, reason ?? rejectionReason)));
  }));
 
 stockReceiptsRouter.post(
@@ -136,5 +136,5 @@ stockReceiptsRouter.post(
  requirePermission('manage_stock_receipts'),
  validate(ReasonSchema),
  asyncHandler(async (req, res) => {
- res.json(sendSuccess(await stockReceiptService.cancel(req.params.id, req.user!.id, req.body.reason)));
+ res.json(sendSuccess(await stockReceiptService.cancel(req.params.id, req.user.id, req.body.reason)));
  }));
