@@ -5,8 +5,9 @@ services:
     region: oregon
     rootDir: backend
     nodeVersion: "20"
-    # Build the backend, then build the frontend into frontend/dist/.
-    # The backend (app.ts) serves frontend/dist as static assets in production,
+    # Backend is plain Node.js/Express (no TypeScript build step). Build the
+    # Prisma client, then build the React frontend into frontend/dist/. The
+    # backend (app.js) serves frontend/dist as static assets in production,
     # so both must exist before the server starts.
     buildCommand: |
       npm install
