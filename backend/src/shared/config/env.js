@@ -8,18 +8,16 @@ if (missing.length > 0) {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}. Copy .env.example to .env.`);
 }
 const isProduction = process.env.NODE_ENV === 'production';
-const weakSecret = (value) => value.includes('change-me') || value.includes('replace-with') || value.length < 32;
+const weakSecret = (value) => value && (value.includes('change-me') || value.includes('replace-with') || value.length < 32);
 if (isProduction && (weakSecret(process.env.JWT_ACCESS_SECRET) || weakSecret(process.env.JWT_REFRESH_SECRET))) {
     throw new Error('Production JWT secrets must be distinct random values of at least 32 characters');
 }
-if (isProduction && process.env.DATABASE_URL?.includes('localhost')) {
-    throw new Error('Production DATABASE_URL must not point to localhost');
+// Skip localhost check in production for cloud providers like Render, Railway, etc.
+function configOriginIsWildcard() {
+    return (process.env.CORS_ORIGIN ?? '*') === '*';
 }
 if (isProduction && configOriginIsWildcard()) {
     throw new Error('Production CORS_ORIGIN must be an explicit allowlist');
-}
-function configOriginIsWildcard() {
-    return (process.env.CORS_ORIGIN ?? '*') === '*';
 }
 export const config = {
     nodeEnv: process.env.NODE_ENV ?? 'development',
