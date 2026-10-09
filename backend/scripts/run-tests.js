@@ -4,11 +4,11 @@
  *
  * Node's built-in test runner auto-discovers `.js`/`.mjs`/`.cjs` files.
  */
-const { spawnSync } = require('node:child_process');
-const { readdirSync } = require('node:fs');
-const { join, relative, sep } = require('node:path');
+import { spawnSync } from 'node:child_process';
+import { readdirSync } from 'node:fs';
+import { join, relative, sep } from 'node:path';
 
-const ROOT = join(__dirname, '..');
+const ROOT = join(import.meta.dirname, '..');
 const TESTS_DIR = join(ROOT, 'tests');
 
 const collect = (dir) => {
@@ -50,7 +50,7 @@ if (selected.length === 0) {
 console.log(`Running ${selected.length} test file(s) with Node ${process.version}\n`);
 
 /**
- * `shared/config/env.ts` refuses to load without its required variables, and
+ * `shared/config/env.js` refuses to load without its required variables, and
  * importing anything that reaches the Prisma client pulls it in. Supplying
  * throwaway values here keeps the suite hermetic and keeps the real secrets
  * out of the repository: nothing here connects to a database, and the suite

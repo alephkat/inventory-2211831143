@@ -4,54 +4,42 @@
  * `PaginatedResponse` wrappers.
  */
 export function sendSuccess(data, message, meta) {
-  return {
-    success: true,
-    message: message ?? null,
-    data,
-    meta: meta ?? null,
-  };
+    return {
+        success: true,
+        message: message ?? null,
+        data,
+        meta: meta ?? null,
+    };
 }
-
-export function sendPaginated(
-  items,
-  total,
-  page,
-  limit,
-  meta
-) {
-  return {
-    success: true,
-    data: {
-      items,
-      total,
-      page,
-      limit,
-      hasNext: total > page * limit,
-      hasPrev: page > 1,
-    },
-    meta: meta ?? null,
-  };
+export function sendPaginated(items, total, page, limit, meta) {
+    return {
+        success: true,
+        data: {
+            items,
+            total,
+            page,
+            limit,
+            hasNext: total > page * limit,
+            hasPrev: page > 1,
+        },
+        meta: meta ?? null,
+    };
 }
-
 /**
  * Normalise pagination input. Accepts raw query strings (when no Zod schema
  * ran) as well as the numbers a coercing schema produces, and falls back to
  * the defaults for anything unparseable — `parseInt('abc')` is `NaN`, which
  * would otherwise reach Prisma as a broken `skip`.
  */
-const toPositiveInt = (
-  value,
-  fallback,
-  max
-) => {
-  const raw = Array.isArray(value) ? value[0] : value;
-  const parsed = typeof raw === 'number' ? raw : parseInt(String(raw ?? ''), 10);
-  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
-  return max ? Math.min(max, parsed) : parsed;
+const toPositiveInt = (value, fallback, max) => {
+    const raw = Array.isArray(value) ? value[0] : value;
+    const parsed = typeof raw === 'number' ? raw : parseInt(String(raw ?? ''), 10);
+    if (!Number.isFinite(parsed) || parsed < 1)
+        return fallback;
+    return max ? Math.min(max, parsed) : parsed;
 };
-
 export function getPagination(query) {
-  const page = toPositiveInt(query.page, 1);
-  const limit = toPositiveInt(query.limit, 20, 100);
-  return { page, limit, skip: (page - 1) * limit };
+    const page = toPositiveInt(query.page, 1);
+    const limit = toPositiveInt(query.limit, 20, 100);
+    return { page, limit, skip: (page - 1) * limit };
 }

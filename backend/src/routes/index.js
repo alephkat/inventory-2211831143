@@ -20,14 +20,11 @@ import { dashboardRouter } from '../modules/dashboard/dashboard.routes.js';
 import { reportsRouter } from '../modules/reports/reports.routes.js';
 import { auditLogsRouter } from '../modules/audit-logs/audit-logs.routes.js';
 import { notificationsRouter } from '../modules/notifications/notifications.routes.js';
-
 export const registerRoutes = Router();
-
 // All routes below are mounted after requireAuth, so every request is
 // authenticated. Authorization is then enforced per-route via
 // requirePermission() / requireRole() inside each module router.
 registerRoutes.use(requireAuthenticated);
-
 registerRoutes.use('/roles', rolesRouter);
 registerRoutes.use('/users', usersRouter);
 registerRoutes.use('/categories', categoriesRouter);

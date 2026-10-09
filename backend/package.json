@@ -16,7 +16,7 @@
     "prisma:studio": "prisma studio",
     "seed": "node src/seed.js",
     "bootstrap": "node scripts/bootstrap.js",
-    "lint": "eslint src tests scripts --ext js",
+    "lint": "eslint src --ext .js",
     "format": "prettier --write \"src/**/*.js\"",
     "test": "node scripts/run-tests.js",
     "test:watch": "node scripts/run-tests.js"
@@ -43,7 +43,6 @@
     "prisma@5.22.0": true,
     "@prisma/client@5.22.0": true,
     "@prisma/engines@5.22.0": true,
-    "bcrypt@5.1.1": true,
-    "esbuild@0.28.2": true
+    "bcrypt@5.1.1": true
   }
 }
