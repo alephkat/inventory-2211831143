@@ -1,11 +1,24 @@
-// Loads .env before PrismaClient is constructed. Without this the datasource
-// URL is missing and the very first query fails with a confusing
-// "Environment variable not found: DATABASE_URL".
+/**
+ * Creates the first user of a fresh database.
+ *
+ * There are no default credentials anywhere in this project: the username,
+ * email and password are always supplied by the operator, e.g.
+ *
+ *   USERNAME=admin EMAIL=admin@example.com PASSWORD='correct horse battery staple' \
+ *     npm run create-user
+ *
+ * Run it once against the empty Neon database, then sign in and create the
+ * rest of the team from the Users page (or with `npm run create-user` again).
+ * It is idempotent for the permission/role catalogue: those are structural
+ * configuration, not data, and are (re)created only when missing.
+ */
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
-import { PERMISSIONS } from './shared/types/permissions.js';
+import { PERMISSIONS } from '../src/shared/types/permissions.js';
+
 const prisma = new PrismaClient();
+
 /**
  * Permission grants per role.
  *
@@ -57,15 +70,26 @@ const ROLES = [
     { name: 'auditor', description: 'View and audit data', permissions: ['view_inventory', 'view_reports', 'export_reports', 'view_audit_logs'] },
     { name: 'read_only', description: 'Read-only access', permissions: ['view_inventory'] },
 ];
-async function main() {
-    if (process.env.NODE_ENV === 'production') {
-        throw new Error('The development seed cannot run in production');
+
+const MIN_PASSWORD_LENGTH = 12;
+
+function required(name) {
+    const value = process.env[name];
+    if (!value || !value.trim()) {
+        throw new Error(`Missing required environment variable: ${name}`);
     }
-    // Default admin password - change in production via ADMIN_DEFAULT_PASSWORD env var
-    const adminPassword = process.env.ADMIN_DEFAULT_PASSWORD ?? 'Admin@12345';
-    // Fail loudly on a typo in the table above. `findMany` would otherwise
-    // return fewer rows than requested and quietly seed a role that is missing
-    // a permission nobody notices until a user cannot do their job.
+    return value.trim();
+}
+
+/** Creates the permission and role catalogue when the database has none. */
+async function ensureAccessControl() {
+    const permissionCount = await prisma.permission.count();
+    const roleCount = await prisma.role.count();
+    if (permissionCount > 0 && roleCount > 0) {
+        return false;
+    }
+    // Fail loudly on a typo in the table above; a silently under-provisioned
+    // role only shows up later as a user who cannot do their job.
     const known = new Set(PERMISSIONS.map((p) => p.value));
     for (const role of ROLES) {
         const unknown = role.permissions.filter((value) => !known.has(value));
@@ -92,42 +116,60 @@ async function main() {
             await prisma.rolePermission.create({ data: { roleId: role.id, permissionId: perm.id } });
         }
     }
-    // `code` is the only unique field on Warehouse, so it is the upsert key.
-    const warehouse = await prisma.warehouse.upsert({
-        where: { code: 'WH-001' },
-        update: {},
-        create: { name: 'Main Warehouse', code: 'WH-001', address: '123 Inventory St', isActive: true },
-    });
-    const adminRole = await prisma.role.findUnique({ where: { name: 'super_admin' } });
-    const passwordHash = await bcrypt.hash(adminPassword, 12);
-    await prisma.user.upsert({
-        where: { username: 'admin' },
-        update: {
-            email: 'admin@inventory.local',
-            fullName: 'System Administrator',
-            roleId: adminRole.id,
-            warehouseId: warehouse.id,
-            isActive: true,
-            status: 'ACTIVE',
-            passwordHash,
-        },
-        create: {
-            username: 'admin',
-            email: 'admin@inventory.local',
-            fullName: 'System Administrator',
-            roleId: adminRole.id,
-            warehouseId: warehouse.id,
-            status: 'ACTIVE',
-            isActive: true,
-            passwordHash,
-        },
-    });
-    // eslint-disable-next-line no-console
-    console.log('Seed complete: permissions, roles, warehouse, admin user created.');
+    return true;
 }
+
+async function main() {
+    const username = required('USERNAME');
+    const email = required('EMAIL');
+    const password = process.env.PASSWORD;
+    if (!password || password.length < MIN_PASSWORD_LENGTH) {
+        throw new Error(`PASSWORD is required and must be at least ${MIN_PASSWORD_LENGTH} characters`);
+    }
+    const roleName = (process.env.ROLE_NAME ?? 'super_admin').trim();
+
+    const seededAccessControl = await ensureAccessControl();
+
+    const role = await prisma.role.findUnique({ where: { name: roleName } });
+    if (!role) {
+        throw new Error(`Role "${roleName}" does not exist. Pick one of: ${ROLES.map((r) => r.name).join(', ')}`);
+    }
+
+    // Warehouse assignment is optional: the first user is usually the owner
+    // and belongs to no specific warehouse.
+    let warehouseId;
+    if (process.env.WAREHOUSE_CODE) {
+        const warehouse = await prisma.warehouse.findUnique({ where: { code: process.env.WAREHOUSE_CODE } });
+        if (!warehouse) {
+            throw new Error(`No warehouse with code "${process.env.WAREHOUSE_CODE}"`);
+        }
+        warehouseId = warehouse.id;
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    const user = await prisma.user.upsert({
+        where: { username },
+        update: { email, roleId: role.id, warehouseId, isActive: true, status: 'ACTIVE', passwordHash },
+        create: {
+            username,
+            email,
+            fullName: process.env.FULL_NAME?.trim() || username,
+            passwordHash,
+            roleId: role.id,
+            warehouseId,
+            status: 'ACTIVE',
+            isActive: true,
+        },
+        select: { id: true, username: true, email: true, role: { select: { name: true } } },
+    });
+
+    // eslint-disable-next-line no-console
+    console.log(`${seededAccessControl ? 'Access control seeded. ' : ''}User "${user.username}" (${user.email}) ready with role "${user.role.name}".`);
+}
+
 main()
-    .catch((e) => {
-    console.error(e);
+    .catch((error) => {
+    console.error(error.message);
     process.exit(1);
 })
     .finally(async () => {

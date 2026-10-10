@@ -4,8 +4,6 @@ import { PasswordService } from '../../shared/utils/password.js';
 import { prisma } from '../../shared/config/database.js';
 import { ApiError } from '../../shared/errors/ApiError.js';
 import { createAuditLog } from '../../shared/utils/audit.js';
-import { notificationService } from '../../modules/notifications/notifications.service.js';
-import { NotificationPriority, NotificationType } from '@prisma/client';
 function getUserAgent(req) {
     const val = req?.headers['user-agent'];
     if (typeof val === 'string')
@@ -13,22 +11,6 @@ function getUserAgent(req) {
     return undefined;
 }
 export class AuthService {
-    captchaStore = new Map();
-    generateCaptcha() {
-        const a = Math.floor(Math.random() * 10) + 1;
-        const b = Math.floor(Math.random() * 10) + 1;
-        const answer = a + b;
-        const token = Array.from({ length: 32 }, () => 'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]).join('');
-        this.captchaStore.set(token, { answer, expiresAt: new Date(Date.now() + 5 * 60 * 1000) });
-        return { token, question: `What is ${a} + ${b}?` };
-    }
-    verifyCaptcha(token, answer) {
-        const entry = this.captchaStore.get(token);
-        if (!entry || entry.expiresAt < new Date())
-            return false;
-        this.captchaStore.delete(token);
-        return entry.answer === answer;
-    }
     getClientIp(req) {
         return req?.ip || req?.socket?.remoteAddress;
     }
@@ -94,57 +76,6 @@ export class AuthService {
             userAgent: getUserAgent(req),
         });
         return this.toUserDto(user);
-    }
-    async publicRegister(input, req) {
-        const captchaValid = this.verifyCaptcha(input.captchaToken, input.captchaAnswer);
-        if (!captchaValid) {
-            throw ApiError.badRequest('Invalid CAPTCHA');
-        }
-        const existing = await prisma.user.findFirst({
-            where: { OR: [{ username: input.username }, { email: input.email }] },
-        });
-        if (existing) {
-            throw ApiError.conflict('Registration is currently unavailable');
-        }
-        const defaultRole = await prisma.role.findUnique({ where: { name: 'read_only' } });
-        if (!defaultRole) {
-            throw ApiError.badRequest('Default role not configured');
-        }
-        const defaultWarehouse = await prisma.warehouse.findFirst({ where: { isActive: true } });
-        if (!defaultWarehouse) {
-            throw ApiError.badRequest('No active warehouse configured');
-        }
-        const passwordHash = await PasswordService.hash(input.password);
-        const user = await prisma.user.create({
-            data: {
-                username: input.username,
-                email: input.email,
-                fullName: input.fullName,
-                passwordHash,
-                roleId: defaultRole.id,
-                warehouseId: defaultWarehouse.id,
-                status: 'PENDING_APPROVAL',
-                isActive: false,
-            },
-            include: { role: { include: { permissions: { include: { permission: true } } } } },
-        });
-        await prisma.user.update({ where: { id: user.id }, data: { createdBy: user.id } });
-        await createAuditLog({
-            userId: user.id,
-            action: 'CREATE',
-            resourceType: 'user',
-            resourceId: user.id,
-            ipAddress: this.getClientIp(req),
-            userAgent: getUserAgent(req),
-        });
-        notificationService.dispatchToPermissions(['manage_users'], {
-            title: 'New registration pending approval',
-            body: `${input.fullName} (${input.username}) has requested an account.`,
-            type: NotificationType.SYSTEM,
-            priority: NotificationPriority.HIGH,
-            data: { userId: user.id, username: input.username, email: input.email },
-        }).catch(() => { });
-        return { success: true, message: 'Registration submitted. Awaiting admin approval.' };
     }
     async refreshToken(refreshToken, req) {
         const refreshTokenHash = this.hashRefreshToken(refreshToken);

@@ -26,10 +26,15 @@ npx prisma generate             # generate the Prisma client
 # SQL Editor, or let Prisma build them:
 npx prisma migrate dev --name init
 
-# seed roles, permissions, a default warehouse and an admin user
-npx prisma db seed
-# (or) npm run seed
+# create the first user (no default accounts or passwords exist).
+# USERNAME, EMAIL and PASSWORD are required; PASSWORD must be 12+ characters.
+USERNAME=admin EMAIL=admin@example.com PASSWORD='a strong password' \
+  npm run create-user
 ```
+
+The permission and role catalogue is created on demand by
+`npm run create-user` if it is missing — it is structural configuration, not
+data. There is no demo data and no default account: the database starts empty.
 
 ### Neon notes
 
@@ -45,6 +50,20 @@ npx prisma db seed
 - Neon has a web SQL editor and branch management, so no local client
   tooling is required.
 
+## CORS in production
+
+`CORS_ORIGIN` is a comma-separated allowlist of exact frontend origins; a
+wildcard (`*`) is rejected. On Render, set it on the backend service
+(Dashboard -> Environment) to the deployed frontend URL, for example:
+
+```
+CORS_ORIGIN=https://frontend-9lfu.onrender.com
+```
+
+A single-company deployment usually serves the frontend and API from the
+same origin (the backend serves `frontend/dist`), in which case CORS is not
+exercised at all. When the frontend is deployed as its own service, its
+build must also point at the API via `VITE_API_URL`.
 ## Run
 
 ```bash
@@ -53,15 +72,20 @@ npm run build    # tsc -> dist/
 npm start        # node dist/index.js
 ```
 
-## Default credentials
+## First user
 
-Created by `npm run seed`. There is no hard-coded password: the seed uses
-`SEED_ADMIN_PASSWORD` from `.env`, or generates a random one and prints it
-once if that variable is unset.
+There are no default credentials. The first account is created once, with a
+password you choose:
 
-| Username | Password                     | Role        |
-|----------|------------------------------|-------------|
-| admin    | value of `SEED_ADMIN_PASSWORD` | super_admin |
+```bash
+USERNAME=admin EMAIL=admin@example.com PASSWORD='a strong password' \
+  ROLE_NAME=super_admin npm run create-user
+```
+
+`ROLE_NAME` defaults to `super_admin`; the full list is printed by the API at
+`GET /api/v1/auth/permissions`. Everyone after that is created by an
+administrator from the Users page — self-registration is intentionally not
+part of this deployment.
 
 ## API contract
 
@@ -74,7 +98,7 @@ All routes are under `/api/v1`. Auth routes:
 | POST   | /auth/logout    | auth   | revoke refresh session     |
 | GET    | /auth/me        | auth   | current user + permissions |
 | POST   | /auth/change-password | auth | change password        |
-| POST   | /auth/register  | admin  | create user (manage_users) |
+| POST   | /auth/register/admin | admin | create user (manage_users) |
 | GET    | /auth/permissions | auth | list roles & permissions   |
 
 Feature routes are protected by `requireAuth`; each route additionally

@@ -13,12 +13,6 @@ class AuthController {
             .then((result) => sendSuccess(res, result, 'User registered'))
             .catch(next);
     };
-    publicRegister = (req, res, next) => {
-        authService
-            .publicRegister(req.body, req)
-            .then((result) => sendSuccess(res, result, 'Registration submitted'))
-            .catch(next);
-    };
     refresh = (req, res, next) => {
         authService
             .refreshToken(req.body.refreshToken, req)
@@ -36,10 +30,6 @@ class AuthController {
             .changePassword(req.user.id, req.body.currentPassword, req.body.newPassword)
             .then((result) => sendSuccess(res, result))
             .catch(next);
-    };
-    captcha = (_req, res) => {
-        const { token, question } = authService.generateCaptcha();
-        sendSuccess(res, { token, question });
     };
     permissions = (_req, res) => {
         sendSuccess(res, {

@@ -13,10 +13,10 @@ services:
       npm install
       npx prisma generate
       cd ../frontend && npm install && npm run build
-    # Apply Prisma migrations on every (re)deploy, bootstrap a fresh database
-    # with permissions, roles, warehouse and admin user if no users exist,
-    # then start the server.
-    startCommand: npx prisma migrate deploy && node scripts/bootstrap.js && npm start
+    # Apply Prisma migrations on every (re)deploy, then start the server.
+    # No seed or bootstrap step: the database starts empty and the first user
+    # is created manually (see backend/scripts/create-user.js).
+    startCommand: npx prisma migrate deploy && npm start
     healthCheckPath: /health
     envVars:
       # --- Non-secret defaults ---
@@ -39,9 +39,11 @@ services:
         fromSecret: JWT_ACCESS_SECRET
       - key: JWT_REFRESH_SECRET
         fromSecret: JWT_REFRESH_SECRET
-      # CORS allowlist for the deployed frontend domain(s).
-      # In production the frontend is served from the same origin, so this
-      # can be set to the service's own URL (e.g., https://inventory-api.onrender.com).
+      # CORS allowlist for the deployed frontend domain(s). Comma-separated
+      # list of exact origins, e.g.
+      #   https://frontend-9lfu.onrender.com,https://your-custom-domain.com
+      # Set this value on the backend service in the Render dashboard
+      # (Environment -> CORS_ORIGIN); a wildcard ("*") is rejected in production.
       - key: CORS_ORIGIN
         fromSecret: CORS_ORIGIN
 

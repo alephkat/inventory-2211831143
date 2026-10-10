@@ -24,8 +24,15 @@ export const createApp = () => {
         app.use(morgan('dev'));
     }
     app.use(helmet());
+    // CORS_ORIGIN is a comma-separated allowlist. The cors package compares
+    // a string origin for exact equality only, so the list has to be split here
+    // or every entry after the first is silently ignored.
+    const allowedOrigins = config.corsOrigin
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean);
     app.use(cors({
-        origin: config.corsOrigin,
+        origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
         credentials: true,
     }));
     app.use(express.json({ limit: '10mb' }));
