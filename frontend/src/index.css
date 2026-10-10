@@ -1,7 +1,37 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
+/* ------------------------------------------------------------------ Theme */
+/* Design tokens. Brand is an indigo scale (matching the login gradient);
+   surface is the app's page background. */
+@theme {
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-200: #c7d2fe;
+  --color-brand-300: #a5b4fc;
+  --color-brand-400: #818cf8;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #4338ca;
+  --color-brand-800: #3730a3;
+  --color-brand-900: #312e81;
+
+  --color-surface: #f8fafc;
+
+  --animate-fade-in: fade-in 150ms ease-out;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* -------------------------------------------------------------- Base layer */
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
@@ -18,6 +48,7 @@
   }
 }
 
+/* --------------------------------------------------------- Component layer */
 @layer components {
   .card {
     @apply bg-white border border-slate-200 rounded-xl;
@@ -45,19 +76,31 @@
   }
 
   .btn-primary {
-    @apply btn bg-brand-600 text-white hover:bg-brand-700 focus-visible:ring-brand-500;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium
+           transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1
+           disabled:cursor-not-allowed disabled:opacity-50
+           bg-brand-600 text-white hover:bg-brand-700 focus-visible:ring-brand-500;
   }
 
   .btn-secondary {
-    @apply btn bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 focus-visible:ring-slate-400;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium
+           transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1
+           disabled:cursor-not-allowed disabled:opacity-50
+           bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 focus-visible:ring-slate-400;
   }
 
   .btn-danger {
-    @apply btn bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium
+           transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1
+           disabled:cursor-not-allowed disabled:opacity-50
+           bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500;
   }
 
   .btn-ghost {
-    @apply btn text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-slate-300;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium
+           transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1
+           disabled:cursor-not-allowed disabled:opacity-50
+           text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-slate-300;
   }
 
   .btn-sm {

@@ -33,7 +33,7 @@ function NotificationPanel({ open, onClose }) {
   if (!open) return null;
   return <>
       <div className="fixed inset-0 z-30" onClick={onClose} aria-hidden />
-      <div className="absolute right-0 z-40 mt-2 w-[22rem] animate-fade-in overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+      <div className="absolute right-0 z-40 mt-2 w-[22rem] max-w-[calc(100vw-1.5rem)] animate-fade-in overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
         <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
           <p className="text-sm font-semibold text-slate-900">Notifications</p>
           <Button
