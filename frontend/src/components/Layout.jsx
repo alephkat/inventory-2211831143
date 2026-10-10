@@ -121,8 +121,7 @@ const NAV_GROUPS = [
   {
     label: "Administration",
     items: [
-      { label: "Users", to: "/users", icon: <UserCog className="h-4.5 w-4.5" />, permissions: ["manage_users"] },
-      { label: "Roles", to: "/roles", icon: <ShieldCheck className="h-4.5 w-4.5" />, permissions: ["manage_users"] }
+      { label: "Users", to: "/users", icon: <UserCog className="h-4.5 w-4.5" />, permissions: ["manage_users"] }
     ]
   }
 ];

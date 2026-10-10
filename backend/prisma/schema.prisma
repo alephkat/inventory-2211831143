@@ -13,8 +13,7 @@ model User {
   email         String       @unique
   fullName      String
   passwordHash  String
-  roleId        String
-  role          Role         @relation(fields: [roleId], references: [id])
+  role          UserRole     @default(read_only)
   status        UserStatus   @default(ACTIVE)
   isActive      Boolean      @default(true)
   profileImage  String?
@@ -28,7 +27,6 @@ model User {
   sessions      UserSession[]
   auditLogs     AuditLog[]
   notifications Notification[]
-
   performedTransactions   InventoryTransaction[] @relation("PerformedBy")
   approvedTransactions    InventoryTransaction[] @relation("ApprovedBy")
   requestedTransfers      StockTransfer[]        @relation("RequestedBy")
@@ -36,7 +34,6 @@ model User {
   dispatchedTransfers     StockTransfer[]        @relation("DispatchedBy")
   receivedTransfers       StockTransfer[]        @relation("ReceivedBy")
   confirmedTransfers      StockTransfer[]        @relation("ConfirmedBy")
-  transferHistoryEntries  TransferHistory[]      @relation("TransferHistoryBy")
   adjustments             StockAdjustment[]      @relation("AdjustedBy")
   approvedAdjustments     StockAdjustment[]      @relation("ApprovedByAdjustment")
   countedSessions         StockCount[]           @relation("CountedBy")
@@ -63,6 +60,21 @@ enum UserStatus {
   PENDING_APPROVAL
 }
 
+// The role lives directly on the user row: this is a single-company
+// deployment, so there is exactly one fixed set of roles and each user gets
+// one. The permission mapping for each role lives in
+// src/shared/types/permissions.js.
+enum UserRole {
+  super_admin
+  admin
+  inventory_manager
+  storekeeper
+  procurement_officer
+  sales_officer
+  auditor
+  read_only
+}
+
 model UserSession {
   id           String   @id @default(uuid())
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -75,40 +87,6 @@ model UserSession {
   deviceInfo   String?
   usedAt       DateTime?
   createdAt    DateTime @default(now())
-}
-
-model Role {
-  id            String            @id @default(uuid())
-  name          String            @unique
-  description   String?
-  isSystem      Boolean           @default(false)
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-
-  users         User[]
-  permissions   RolePermission[]
-}
-
-model Permission {
-  id            String             @id @default(uuid())
-  name          String             @unique
-  value         String             @unique
-  description   String?
-  resource      String?
-  createdAt     DateTime           @default(now())
-
-  roles         RolePermission[]
-}
-
-model RolePermission {
-  id          String     @id @default(uuid())
-  role        Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  roleId      String
-  permission    Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-  permissionId  String
-  createdAt   DateTime   @default(now())
-
-  @@unique([roleId, permissionId])
 }
 
 model Category {
@@ -383,7 +361,6 @@ model StockTransfer {
 
   items         StockTransferItem[]
   transactions  InventoryTransaction[]
-  history       TransferHistory[]
 }
 
 enum TransferStatus {
@@ -411,18 +388,6 @@ model StockTransferItem {
   updatedAt       DateTime          @updatedAt
 
   @@unique([transferId, productId])
-}
-
-model TransferHistory {
-  id            String        @id @default(uuid())
-  transferId    String
-  transfer      StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
-  fromStatus    TransferStatus?
-  toStatus      TransferStatus
-  changedById   String?
-  changedBy     User?         @relation("TransferHistoryBy", fields: [changedById], references: [id])
-  notes         String?
-  createdAt     DateTime      @default(now())
 }
 
 model StockAdjustment {

@@ -36,3 +36,64 @@ export const PERMISSIONS = [
     { value: 'system_settings', name: 'System Settings', description: 'Configure system settings', resource: 'settings' },
 ];
 export const PERMISSION_VALUES = PERMISSIONS.map((p) => p.value);
+
+/**
+ * The fixed set of roles of this single-company deployment, in the order they
+ * appear in the UI. Roles live on the user row (see the `UserRole` enum in
+ * schema.prisma); this map is the only place that decides what a role can do.
+ */
+export const ROLES = [
+    { value: 'super_admin', name: 'Super Admin', description: 'Full system access' },
+    { value: 'admin', name: 'Admin', description: 'Administrative access' },
+    { value: 'inventory_manager', name: 'Inventory Manager', description: 'Manage inventory operations and approve stock movements' },
+    { value: 'storekeeper', name: 'Storekeeper', description: 'Handle stock movements' },
+    { value: 'procurement_officer', name: 'Procurement Officer', description: 'Manage purchasing and supplier onboarding' },
+    { value: 'sales_officer', name: 'Sales Officer', description: 'Manage sales' },
+    { value: 'auditor', name: 'Auditor', description: 'View and audit data' },
+    { value: 'read_only', name: 'Read Only', description: 'Read-only access' },
+];
+export const ROLE_VALUES = ROLES.map((r) => r.value);
+
+/**
+ * Permission grants per role.
+ *
+ * Each workflow is split between a permission that lets a role *propose* a
+ * document and one that lets it *approve* it. A role never gets both for the
+ * same workflow unless it is an administrator, so the approval queue stays a
+ * real second pair of eyes rather than self-approval.
+ */
+const ALL = PERMISSION_VALUES;
+export const ROLE_PERMISSIONS = {
+    super_admin: ALL,
+    admin: ALL,
+    inventory_manager: [
+        'view_inventory', 'add_product', 'edit_product', 'delete_product',
+        'receive_stock', 'issue_stock', 'transfer_stock', 'adjust_stock', 'count_stock',
+        'manage_stock_receipts', 'approve_stock_receipts', 'approve_stock_issues',
+        'override_stock_issue', 'approve_stock_counts', 'approve_transactions',
+        'manage_suppliers', 'manage_categories', 'manage_warehouses', 'manage_customers',
+        'manage_purchase_orders', 'view_reports', 'export_reports',
+    ],
+    storekeeper: [
+        'view_inventory', 'receive_stock', 'issue_stock', 'transfer_stock',
+        'count_stock', 'manage_stock_receipts', 'adjust_stock', 'view_reports',
+    ],
+    procurement_officer: [
+        'view_inventory', 'manage_suppliers', 'manage_purchase_orders',
+        'manage_stock_receipts', 'view_reports', 'export_reports',
+    ],
+    sales_officer: [
+        'view_inventory', 'manage_customers', 'manage_sales_orders',
+        'issue_stock', 'view_reports',
+    ],
+    auditor: ['view_inventory', 'view_reports', 'export_reports', 'view_audit_logs'],
+    read_only: ['view_inventory'],
+};
+
+/**
+ * Permissions granted to a role. Falls back to the read-only set so an
+ * unknown role can never silently inherit everything.
+ */
+export function permissionsForRole(role) {
+    return ROLE_PERMISSIONS[role] ?? ROLE_PERMISSIONS.read_only;
+}

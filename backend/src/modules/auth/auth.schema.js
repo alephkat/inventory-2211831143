@@ -8,7 +8,7 @@ export const RegisterSchema = z.object({
     email: z.string().email(),
     fullName: z.string().min(1),
     password: z.string().min(8),
-    roleId: z.string().uuid(),
+    role: z.enum(['super_admin', 'admin', 'inventory_manager', 'storekeeper', 'procurement_officer', 'sales_officer', 'auditor', 'read_only']),
     warehouseId: z.string().uuid().optional().nullable(),
 });
 export const RefreshSchema = z.object({

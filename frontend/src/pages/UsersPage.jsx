@@ -18,12 +18,22 @@ import { DataTable, Pagination } from "@/components/DataTable";
 import { ConfirmDialog } from "@/components/feedback";
 import { StatusBadge } from "@/components/StatusBadge";
 const STATUS_OPTIONS = ["ACTIVE", "INACTIVE", "SUSPENDED", "PENDING_APPROVAL"];
+const ROLE_OPTIONS = [
+  "super_admin",
+  "admin",
+  "inventory_manager",
+  "storekeeper",
+  "procurement_officer",
+  "sales_officer",
+  "auditor",
+  "read_only"
+];
 const EMPTY_FORM = {
   username: "",
   email: "",
   fullName: "",
   password: "",
-  roleId: "",
+  role: "",
   warehouseId: "",
   status: "ACTIVE"
 };
@@ -34,7 +44,7 @@ function UsersPage() {
   const searchTimer = useRef();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [roleId, setRoleId] = useState("");
+  const [role, setRole] = useState("");
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
@@ -43,25 +53,20 @@ function UsersPage() {
   const [formError, setFormError] = useState("");
   const [confirm, setConfirm] = useState(null);
   const users = useQuery({
-    queryKey: ["users", "list", debouncedSearch, roleId, status, page, limit],
+    queryKey: ["users", "list", debouncedSearch, role, status, page, limit],
     queryFn: () => api.get("/api/v1/users", {
       page,
       limit,
       search: debouncedSearch || void 0,
-      roleId: roleId || void 0,
+      role: role || void 0,
       status: status || void 0
     })
-  });
-  const roles = useQuery({
-    queryKey: ["roles", "all"],
-    queryFn: () => api.get("/api/v1/roles")
   });
   const warehouses = useQuery({
     queryKey: ["warehouses", "all"],
     queryFn: () => api.get("/api/v1/warehouses", { limit: 100 })
   });
   const list = normalizeList(users.data, limit);
-  const roleOptions = roles.data ?? [];
   const warehouseOptions = normalizeList(warehouses.data, 100).items;
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -73,7 +78,7 @@ function UsersPage() {
       email: payload.email,
       fullName: payload.fullName,
       password: payload.password,
-      roleId: payload.roleId,
+      role: payload.role,
       warehouseId: payload.warehouseId || void 0
     }),
     onSuccess: () => {
@@ -88,7 +93,7 @@ function UsersPage() {
     mutationFn: (payload) => api.put(`/api/v1/users/${editingId}`, {
       fullName: payload.fullName,
       email: payload.email,
-      roleId: payload.roleId,
+      role: payload.role,
       warehouseId: payload.warehouseId || null,
       status: payload.status
     }),
@@ -139,7 +144,7 @@ function UsersPage() {
         setFormError("Password must be at least 8 characters.");
         return;
       }
-      if (!form.roleId) {
+      if (!form.role) {
         setFormError("Choose a role.");
         return;
       }
@@ -172,7 +177,7 @@ function UsersPage() {
     {
       key: "role",
       header: "Role",
-      render: (user) => <span className="text-sm text-slate-700">{humanize(user.role?.name ?? "")}</span>
+      render: (user) => <span className="text-sm text-slate-700">{humanize(user.role ?? "")}</span>
     },
     {
       key: "status",
@@ -208,7 +213,7 @@ function UsersPage() {
               email: user.email,
               fullName: user.fullName,
               password: "",
-              roleId: user.roleId,
+              role: user.role,
               warehouseId: user.warehouseId ?? "",
               status: user.status
             });
@@ -290,12 +295,12 @@ function UsersPage() {
             <Field label="Role" htmlFor="user-role" required>
               <Select
     id="user-role"
-    value={form.roleId}
-    onChange={(event) => setForm({ ...form, roleId: event.target.value })}
+    value={form.role}
+    onChange={(event) => setForm({ ...form, role: event.target.value })}
   >
                 <option value="">Select a role</option>
-                {roleOptions.map((role) => <option key={role.id} value={role.id}>
-                    {humanize(role.name)}
+                {ROLE_OPTIONS.map((option) => <option key={option} value={option}>
+                    {humanize(option)}
                   </option>)}
               </Select>
             </Field>
@@ -359,15 +364,15 @@ function UsersPage() {
           </Field>
           <Field label="Role">
             <Select
-    value={roleId}
+    value={role}
     onChange={(event) => {
-      setRoleId(event.target.value);
+      setRole(event.target.value);
       setPage(1);
     }}
   >
               <option value="">All roles</option>
-              {roleOptions.map((role) => <option key={role.id} value={role.id}>
-                  {humanize(role.name)}
+              {ROLE_OPTIONS.map((option) => <option key={option} value={option}>
+                  {humanize(option)}
                 </option>)}
             </Select>
           </Field>

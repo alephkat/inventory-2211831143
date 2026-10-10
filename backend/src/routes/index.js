@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { requireAuthenticated } from '../shared/middlewares/auth.js';
-import { rolesRouter } from '../modules/roles/roles.routes.js';
 import { usersRouter } from '../modules/users/users.routes.js';
 import { categoriesRouter } from '../modules/categories/categories.routes.js';
 import { suppliersRouter } from '../modules/suppliers/suppliers.routes.js';
@@ -25,7 +24,6 @@ export const registerRoutes = Router();
 // authenticated. Authorization is then enforced per-route via
 // requirePermission() / requireRole() inside each module router.
 registerRoutes.use(requireAuthenticated);
-registerRoutes.use('/roles', rolesRouter);
 registerRoutes.use('/users', usersRouter);
 registerRoutes.use('/categories', categoriesRouter);
 registerRoutes.use('/suppliers', suppliersRouter);

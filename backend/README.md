@@ -32,17 +32,20 @@ USERNAME=admin EMAIL=admin@example.com PASSWORD='a strong password' \
   npm run create-user
 ```
 
-The permission and role catalogue is created on demand by
-`npm run create-user` if it is missing — it is structural configuration, not
-data. There is no demo data and no default account: the database starts empty.
+Roles are a fixed enum on the user row (`UserRole` in `schema.prisma`) and the
+permissions each role grants are a map in `src/shared/types/permissions.js` —
+there are no permission tables to keep in sync. There is no demo data and no
+default account: the database starts empty.
 
 ### Neon notes
 
 - `prisma/neon-schema.sql` is the full DDL (enums, tables, indexes, foreign
-  keys) generated from `prisma/schema.prisma`. Use it to bootstrap a fresh
-  Neon database from the Console SQL Editor; it is not idempotent, so run it
-  once. Regenerate it with `npx prisma migrate diff --from-empty
-  --to-schema-datamodel prisma/schema.prisma --script` after schema changes.
+  keys) generated from `prisma/schema.prisma` by `npm run prisma:sql`. Use it
+  to bootstrap a fresh Neon database from the Console SQL Editor; it is
+  idempotent, so it is safe to run more than once. Regenerate it with
+  `npm run prisma:sql` after schema changes — the script post-processes the
+  Prisma diff because raw diff output uses `CREATE TYPE`, which has no
+  `IF NOT EXISTS` form in PostgreSQL and therefore fails on a second run.
 - Use the **direct** host (`ep-xxx.<region>.aws.neon.tech`), not the
   `-pooler` host, unless you add `&pgbouncer=true` to the URL.
 - Keep `?sslmode=require`; Neon requires TLS.

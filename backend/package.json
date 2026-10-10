@@ -13,6 +13,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:sql": "node scripts/generate-neon-schema.mjs",
     "prisma:studio": "prisma studio",
     "create-user": "node scripts/create-user.js",
     "lint": "eslint src --ext .js",

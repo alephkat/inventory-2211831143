@@ -4,6 +4,7 @@ import { PasswordService } from '../../shared/utils/password.js';
 import { prisma } from '../../shared/config/database.js';
 import { ApiError } from '../../shared/errors/ApiError.js';
 import { createAuditLog } from '../../shared/utils/audit.js';
+import { permissionsForRole, ROLE_VALUES } from '../../shared/types/permissions.js';
 function getUserAgent(req) {
     const val = req?.headers['user-agent'];
     if (typeof val === 'string')
@@ -17,7 +18,6 @@ export class AuthService {
     async login(username, password, req) {
         const user = await prisma.user.findFirst({
             where: { username, isActive: true, status: 'ACTIVE' },
-            include: { role: { include: { permissions: { include: { permission: true } } } } },
         });
         if (!user) {
             throw ApiError.unauthorized('Invalid credentials');
@@ -49,9 +49,8 @@ export class AuthService {
         if (existing) {
             throw ApiError.conflict('Username or email already exists');
         }
-        const role = await prisma.role.findUnique({ where: { id: input.roleId } });
-        if (!role) {
-            throw ApiError.badRequest('Invalid role');
+        if (!ROLE_VALUES.includes(input.role)) {
+            throw ApiError.badRequest(`Invalid role: ${input.role}`);
         }
         const passwordHash = await PasswordService.hash(input.password);
         const user = await prisma.user.create({
@@ -60,12 +59,11 @@ export class AuthService {
                 email: input.email,
                 fullName: input.fullName,
                 passwordHash,
-                roleId: input.roleId,
+                role: input.role,
                 warehouseId: input.warehouseId ?? undefined,
                 createdBy: adminUserId,
                 status: 'ACTIVE',
             },
-            include: { role: { include: { permissions: { include: { permission: true } } } } },
         });
         await createAuditLog({
             userId: adminUserId,
@@ -87,7 +85,7 @@ export class AuthService {
         }
         const session = await prisma.userSession.findFirst({
             where: { refreshToken: refreshTokenHash, expiresAt: { gt: new Date() } },
-            include: { user: { include: { role: { include: { permissions: { include: { permission: true } } } } } } },
+            include: { user: true },
         });
         if (!session) {
             throw ApiError.unauthorized('Refresh session expired or invalid');
@@ -118,7 +116,6 @@ export class AuthService {
     async me(userId) {
         const user = await prisma.user.findUnique({
             where: { id: userId },
-            include: { role: { include: { permissions: { include: { permission: true } } } } },
         });
         if (!user) {
             throw ApiError.notFound('User not found');
@@ -143,7 +140,7 @@ export class AuthService {
         const payload = {
             sub: user.id,
             username: user.username,
-            role: user.role.name,
+            role: user.role,
             status: user.status,
         };
         const accessToken = JwtService.signAccessToken(payload);
@@ -163,15 +160,13 @@ export class AuthService {
         return createHash('sha256').update(refreshToken).digest('hex');
     }
     toUserDto(user) {
-        const permissions = user.role.permissions.map((rp) => rp.permission.value);
         return {
             id: user.id,
             username: user.username,
             email: user.email,
             fullName: user.fullName,
-            role: user.role.name,
-            roleId: user.role.id,
-            permissions,
+            role: user.role,
+            permissions: permissionsForRole(user.role),
             status: user.status,
             isActive: user.isActive,
             profileImage: user.profileImage,

@@ -17,7 +17,6 @@ import { SalesOrdersPage } from "@/pages/SalesOrdersPage";
 import { ReportsPage } from "@/pages/ReportsPage";
 import { AuditLogsPage } from "@/pages/AuditLogsPage";
 import { UsersPage } from "@/pages/UsersPage";
-import { RolesPage } from "@/pages/RolesPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 function RequireAuth({ children }) {
@@ -116,12 +115,6 @@ function App() {
     path="users"
     element={<RequirePermission permission="manage_users">
                 <UsersPage />
-              </RequirePermission>}
-  />
-          <Route
-    path="roles"
-    element={<RequirePermission permission="manage_users">
-                <RolesPage />
               </RequirePermission>}
   />
 

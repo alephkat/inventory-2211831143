@@ -1,4 +1,5 @@
 import { UserStatus } from '@prisma/client';
+import { ROLE_VALUES } from '../../shared/types/permissions.js';
 import { prisma } from '../../shared/config/database.js';
 import { ApiError } from '../../shared/errors/ApiError.js';
 const USER_STATUSES = Object.values(UserStatus);
@@ -13,7 +14,7 @@ const USER_PUBLIC_SELECT = {
     username: true,
     email: true,
     fullName: true,
-    roleId: true,
+    role: true,
     status: true,
     isActive: true,
     profileImage: true,
@@ -25,13 +26,13 @@ const USER_PUBLIC_SELECT = {
 };
 export class UserService {
     async list(params) {
-        const { page, limit, search, roleId, status, warehouseId } = params;
+        const { page, limit, search, role, status, warehouseId } = params;
         const where = {};
         if (search) {
             where.OR = [{ username: { contains: search } }, { email: { contains: search } }, { fullName: { contains: search } }];
         }
-        if (roleId)
-            where.roleId = roleId;
+        if (role)
+            where.role = role;
         if (status)
             where.status = status;
         if (warehouseId)
@@ -39,7 +40,7 @@ export class UserService {
         const [items, total] = await Promise.all([
             prisma.user.findMany({
                 where,
-                select: { ...USER_PUBLIC_SELECT, role: { select: { id: true, name: true } } },
+                select: USER_PUBLIC_SELECT,
                 skip: (page - 1) * limit,
                 take: limit,
                 orderBy: { createdAt: 'desc' },
@@ -51,16 +52,7 @@ export class UserService {
     async get(id) {
         const user = await prisma.user.findUnique({
             where: { id },
-            select: {
-                ...USER_PUBLIC_SELECT,
-                role: {
-                    select: {
-                        id: true,
-                        name: true,
-                        permissions: { select: { permission: { select: { value: true, name: true } } } },
-                    },
-                },
-            },
+            select: USER_PUBLIC_SELECT,
         });
         if (!user)
             throw ApiError.notFound('User not found');
@@ -84,10 +76,8 @@ export class UserService {
             }
             status = data.status;
         }
-        if (data.roleId !== undefined) {
-            const role = await prisma.role.findUnique({ where: { id: data.roleId } });
-            if (!role)
-                throw ApiError.badRequest('Invalid role');
+        if (data.role !== undefined && !ROLE_VALUES.includes(data.role)) {
+            throw ApiError.badRequest(`role must be one of: ${ROLE_VALUES.join(', ')}`);
         }
         let isActive = data.isActive;
         if (data.status !== undefined && data.isActive === undefined) {
@@ -98,7 +88,7 @@ export class UserService {
             data: {
                 fullName: data.fullName ?? undefined,
                 email: data.email ?? undefined,
-                roleId: data.roleId ?? undefined,
+                role: data.role ?? undefined,
                 warehouseId: data.warehouseId === undefined ? undefined : data.warehouseId,
                 status: status ?? undefined,
                 isActive: isActive ?? undefined,

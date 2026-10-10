@@ -1,5 +1,5 @@
 import { authService } from './auth.service.js';
-import { PERMISSIONS } from '../../shared/types/permissions.js';
+import { PERMISSIONS, ROLES } from '../../shared/types/permissions.js';
 class AuthController {
     login = (req, res, next) => {
         authService
@@ -33,7 +33,7 @@ class AuthController {
     };
     permissions = (_req, res) => {
         sendSuccess(res, {
-            roles: ['super_admin', 'admin', 'inventory_manager', 'storekeeper', 'procurement_officer', 'sales_officer', 'auditor', 'read_only'],
+            roles: ROLES,
             permissions: PERMISSIONS,
         });
     };

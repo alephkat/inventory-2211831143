@@ -137,7 +137,6 @@ export class StockTransferService {
             actorId: userId,
             reference: transfer.referenceNumber,
             patch: { approvedById: userId, approvedAt: new Date() },
-            onTransitioned: (tx) => this.recordHistory(tx, id, transfer.status, TransferStatus.APPROVED, userId),
         });
         return this.get(id);
     }
@@ -176,7 +175,6 @@ export class StockTransferService {
                     productLabel: item.product?.name,
                 })));
             },
-            onTransitioned: (tx) => this.recordHistory(tx, id, transfer.status, TransferStatus.DISPATCHED, userId),
         });
         return this.get(id);
     }
@@ -191,7 +189,6 @@ export class StockTransferService {
             verb: 'mark in transit',
             actorId: userId,
             reference: transfer.referenceNumber,
-            onTransitioned: (tx) => this.recordHistory(tx, id, transfer.status, TransferStatus.IN_TRANSIT, userId),
         });
         return this.get(id);
     }
@@ -240,7 +237,6 @@ export class StockTransferService {
                     });
                 }
             },
-            onTransitioned: (tx) => this.recordHistory(tx, id, transfer.status, TransferStatus.RECEIVED, userId),
         });
         return this.get(id);
     }
@@ -282,7 +278,6 @@ export class StockTransferService {
                     productLabel: item.product?.name,
                 })));
             },
-            onTransitioned: (tx) => this.recordHistory(tx, id, transfer.status, TransferStatus.CONFIRMED, userId),
         });
         return this.get(id);
     }
@@ -300,7 +295,6 @@ export class StockTransferService {
             reference: transfer.referenceNumber,
             reason: rejectionReason,
             patch: { approvedById: userId, approvedAt: new Date(), notes: rejectionReason },
-            onTransitioned: (tx) => this.recordHistory(tx, id, transfer.status, TransferStatus.REJECTED, userId, rejectionReason),
         });
         return this.get(id);
     }
@@ -324,7 +318,6 @@ export class StockTransferService {
             actorId: userId,
             reference: transfer.referenceNumber,
             reason: reason ?? null,
-            onTransitioned: (tx) => this.recordHistory(tx, id, transfer.status, TransferStatus.CANCELLED, userId, reason ?? null),
         });
         return this.get(id);
     }
@@ -358,17 +351,6 @@ export class StockTransferService {
             // Re-exported through the guard so the message shape stays consistent.
             assertSufficientStock(available, item.quantity, `Available stock for ${item.product?.name ?? item.productId}`);
         }
-    }
-    async recordHistory(tx, transferId, fromStatus, toStatus, userId, notes) {
-        await tx.transferHistory.create({
-            data: {
-                transferId,
-                fromStatus,
-                toStatus,
-                changedById: userId,
-                notes: notes ?? null,
-            },
-        });
     }
 }
 export const stockTransferService = new StockTransferService();

@@ -7,7 +7,7 @@ import { z } from 'zod';
 const UpdateUserSchema = z.object({
     fullName: z.string().optional(),
     email: z.string().email().optional(),
-    roleId: z.string().uuid().optional(),
+    role: z.string().optional(),
     warehouseId: z.string().uuid().nullable().optional(),
     status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED', 'PENDING_APPROVAL']).optional(),
     isActive: z.boolean().optional(),
@@ -23,7 +23,7 @@ usersRouter.get('/', async (req, res, next) => {
         const result = await userService.list({
             ...pg,
             search: req.query.search,
-            roleId: req.query.roleId,
+            role: req.query.role,
             status: req.query.status,
             warehouseId: req.query.warehouseId,
         });
