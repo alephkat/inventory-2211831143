@@ -4,7 +4,7 @@ import { Ban, Check, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { api, normalizeList } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/lib/ToastProvider";
-import { errorMessage } from "@/lib/format";
+import { errorMessage, formatZambianPhone, isZambianPhone } from "@/lib/format";
 import {
   Alert,
   Button,
@@ -121,6 +121,10 @@ function SuppliersPage() {
       setFormError("Supplier name is required.");
       return;
     }
+    if (!isZambianPhone(form.phone)) {
+      setFormError("Enter a Zambian phone number, e.g. 0977 123 456 or +260 977 123 456.");
+      return;
+    }
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       setFormError("Enter a valid email address.");
       return;
@@ -151,7 +155,7 @@ function SuppliersPage() {
       secondary: true,
       render: (supplier) => <div className="min-w-0">
           <p className="truncate text-slate-700">{supplier.contactPerson ?? "\u2014"}</p>
-          <p className="truncate text-xs text-slate-500">{supplier.email ?? supplier.phone ?? ""}</p>
+          <p className="truncate text-xs text-slate-500">{supplier.email ?? formatZambianPhone(supplier.phone)}</p>
         </div>
     },
     {
@@ -348,9 +352,12 @@ function SuppliersPage() {
             <Field label="Phone" htmlFor="supplier-phone">
               <Input
     id="supplier-phone"
+    type="tel"
+    inputMode="tel"
+    autoComplete="tel"
     value={form.phone}
     onChange={(event) => setForm({ ...form, phone: event.target.value })}
-    placeholder="+1 555 0100"
+    placeholder="0977 123 456"
   />
             </Field>
             <Field label="Tax ID" htmlFor="supplier-tax">

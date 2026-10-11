@@ -1,9 +1,10 @@
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
 }
-const currencyFormatter = new Intl.NumberFormat("en-US", {
+// Zambian Kwacha: en-ZM renders the "K" symbol (K 1,234.50).
+const currencyFormatter = new Intl.NumberFormat("en-ZM", {
   style: "currency",
-  currency: "USD",
+  currency: "ZMW",
   minimumFractionDigits: 2,
   maximumFractionDigits: 2
 });
@@ -71,6 +72,20 @@ function errorMessage(error, fallback = "Something went wrong") {
   if (typeof error === "string" && error) return error;
   return fallback;
 }
+const PHONE_SEPARATORS = /[\s().-]/g;
+// Zambian numbers: leading 0 or +260 followed by 9-10 digits
+// (0977 123 456, +260 977 123 456, 0211 234 567).
+const ZAMBIAN_PHONE = /^(?:\+?260|0)\d{9,10}$/;
+function isZambianPhone(value) {
+  if (!value) return true;
+  return ZAMBIAN_PHONE.test(value.trim().replace(PHONE_SEPARATORS, ""));
+}
+function formatZambianPhone(value) {
+  if (!isZambianPhone(value)) return value ?? "\u2014";
+  const digits = value.trim().replace(PHONE_SEPARATORS, "").replace(/^\+?260/, "0");
+  const grouped = digits.replace(/^0(\d{3})(\d{3})(\d{3})$/, "0$1 $2 $3");
+  return grouped === digits ? digits : grouped;
+}
 export {
   cn,
   errorMessage,
@@ -80,6 +95,8 @@ export {
   formatDateTime,
   formatNumber,
   formatRelative,
+  formatZambianPhone,
   humanize,
-  initials
+  initials,
+  isZambianPhone
 };

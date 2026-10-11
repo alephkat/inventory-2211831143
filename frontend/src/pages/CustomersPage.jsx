@@ -4,7 +4,7 @@ import { Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { api, normalizeList } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/lib/ToastProvider";
-import { errorMessage } from "@/lib/format";
+import { errorMessage, formatZambianPhone, isZambianPhone } from "@/lib/format";
 import { Alert, Badge, Button, Card, Field, Input, PageHeader } from "@/components/ui";
 import { DataTable, Pagination } from "@/components/DataTable";
 import { ConfirmDialog } from "@/components/feedback";
@@ -86,6 +86,10 @@ function CustomersPage() {
       setFormError("Customer name is required.");
       return;
     }
+    if (!isZambianPhone(form.phone)) {
+      setFormError("Enter a Zambian phone number, e.g. 0977 123 456 or +260 977 123 456.");
+      return;
+    }
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       setFormError("Enter a valid email address.");
       return;
@@ -107,7 +111,7 @@ function CustomersPage() {
       secondary: true,
       render: (customer) => <div className="min-w-0">
           <p className="truncate text-slate-700">{customer.contactPerson ?? "\u2014"}</p>
-          <p className="truncate text-xs text-slate-500">{customer.email ?? customer.phone ?? ""}</p>
+          <p className="truncate text-xs text-slate-500">{customer.email ?? formatZambianPhone(customer.phone)}</p>
         </div>
     },
     {
@@ -219,9 +223,12 @@ function CustomersPage() {
             <Field label="Phone" htmlFor="customer-phone">
               <Input
     id="customer-phone"
+    type="tel"
+    inputMode="tel"
+    autoComplete="tel"
     value={form.phone}
     onChange={(event) => setForm({ ...form, phone: event.target.value })}
-    placeholder="+1 555 0111"
+    placeholder="0977 123 456"
   />
             </Field>
             <Field label="Tax ID" htmlFor="customer-tax">

@@ -4,12 +4,13 @@ import { validate } from '../../shared/middlewares/validate.js';
 import { requirePermission } from '../../shared/middlewares/auth.js';
 import { getPagination } from '../../shared/utils/response.js';
 import { z } from 'zod';
+import { zambianPhone } from '../../shared/schemas/phone.js';
 const WarehouseSchema = z.object({
     name: z.string().min(1),
     code: z.string().optional(),
     address: z.string().optional().nullable(),
     contactPerson: z.string().optional().nullable(),
-    phone: z.string().optional().nullable(),
+    phone: zambianPhone,
     managerId: z.string().uuid().optional().nullable(),
     isActive: z.boolean().default(true),
     currentCapacity: z.number().optional().nullable(),
@@ -17,8 +18,9 @@ const WarehouseSchema = z.object({
 });
 const UpdateWarehouseSchema = WarehouseSchema.partial();
 export const warehousesRouter = Router();
-warehousesRouter.use(requirePermission('manage_warehouses'));
-warehousesRouter.get('/', async (req, res, next) => {
+// Reads only need the view permission; every mutation and workflow
+// transition needs the manage permission.
+warehousesRouter.get('/', requirePermission(['view_warehouses', 'manage_warehouses']), async (req, res, next) => {
     try {
         res.json({ success: true, data: await warehouseService.list({ ...getPagination(req.query), search: req.query.search }) });
     }
@@ -26,7 +28,7 @@ warehousesRouter.get('/', async (req, res, next) => {
         next(e);
     }
 });
-warehousesRouter.get('/:id', async (req, res, next) => {
+warehousesRouter.get('/:id', requirePermission(['view_warehouses', 'manage_warehouses']), async (req, res, next) => {
     try {
         res.json({ success: true, data: await warehouseService.get(req.params.id) });
     }
@@ -34,7 +36,7 @@ warehousesRouter.get('/:id', async (req, res, next) => {
         next(e);
     }
 });
-warehousesRouter.post('/', validate(WarehouseSchema), async (req, res, next) => {
+warehousesRouter.post('/', requirePermission('manage_warehouses'), validate(WarehouseSchema), async (req, res, next) => {
     try {
         res.status(201).json({ success: true, data: await warehouseService.create(req.body, req.user.id) });
     }
@@ -42,7 +44,7 @@ warehousesRouter.post('/', validate(WarehouseSchema), async (req, res, next) => 
         next(e);
     }
 });
-warehousesRouter.put('/:id', validate(UpdateWarehouseSchema), async (req, res, next) => {
+warehousesRouter.put('/:id', requirePermission('manage_warehouses'), validate(UpdateWarehouseSchema), async (req, res, next) => {
     try {
         res.json({ success: true, data: await warehouseService.update(req.params.id, req.body) });
     }
@@ -50,7 +52,7 @@ warehousesRouter.put('/:id', validate(UpdateWarehouseSchema), async (req, res, n
         next(e);
     }
 });
-warehousesRouter.delete('/:id', async (req, res, next) => {
+warehousesRouter.delete('/:id', requirePermission('manage_warehouses'), async (req, res, next) => {
     try {
         res.json({ success: true, data: await warehouseService.delete(req.params.id, req.user.id) });
     }

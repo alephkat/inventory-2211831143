@@ -91,7 +91,7 @@ export class PurchaseOrderService {
                 discountAmount: priced.totals.discountAmount,
                 taxAmount: priced.totals.taxAmount,
                 totalAmount: priced.totals.total,
-                currency: data.currency ?? 'USD',
+                currency: data.currency ?? 'ZMW',
                 expectedDate: data.expectedDate ?? null,
                 notes: data.notes ?? null,
                 terms: data.terms ?? null,

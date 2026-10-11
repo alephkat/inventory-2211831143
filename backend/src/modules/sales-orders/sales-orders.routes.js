@@ -21,7 +21,7 @@ const AddItemSchema = z.object({
     unitPrice: z.number().nonnegative(),
 });
 export const salesOrdersRouter = Router();
-salesOrdersRouter.get('/', requirePermission('manage_sales_orders'), async (req, res, next) => {
+salesOrdersRouter.get('/', requirePermission(['manage_sales_orders', 'view_inventory']), async (req, res, next) => {
     try {
         const pg = getPagination(req.query);
         res.json({ success: true, data: await salesOrderService.list({ ...pg, status: req.query.status, customerId: req.query.customerId, search: req.query.search }) });
@@ -30,7 +30,7 @@ salesOrdersRouter.get('/', requirePermission('manage_sales_orders'), async (req,
         next(e);
     }
 });
-salesOrdersRouter.get('/:id', requirePermission('manage_sales_orders'), async (req, res, next) => {
+salesOrdersRouter.get('/:id', requirePermission(['manage_sales_orders', 'view_inventory']), async (req, res, next) => {
     try {
         res.json({ success: true, data: await salesOrderService.get(req.params.id) });
     }

@@ -9,6 +9,9 @@
  */
 export const PERMISSIONS = [
     { value: 'view_inventory', name: 'View Inventory', description: 'View inventory and stock levels', resource: 'inventory' },
+    { value: 'view_suppliers', name: 'View Suppliers', description: 'View suppliers and their catalogue', resource: 'supplier' },
+    { value: 'view_customers', name: 'View Customers', description: 'View customers', resource: 'customer' },
+    { value: 'view_warehouses', name: 'View Warehouses', description: 'View warehouses', resource: 'warehouse' },
     { value: 'add_product', name: 'Add Product', description: 'Create products', resource: 'product' },
     { value: 'edit_product', name: 'Edit Product', description: 'Update products', resource: 'product' },
     { value: 'delete_product', name: 'Delete Product', description: 'Delete products', resource: 'product' },
@@ -63,11 +66,24 @@ export const ROLE_VALUES = ROLES.map((r) => r.value);
  * real second pair of eyes rather than self-approval.
  */
 const ALL = PERMISSION_VALUES;
+
+/**
+ * Administrators are deliberately read-only for operational data: they run the
+ * company and its people, while day-to-day stock, sourcing and customer work
+ * belongs to the operational roles below. They keep user management plus
+ * reporting, so they can see the statistics without touching the records.
+ */
+const ADMIN_READ_ONLY = [
+    'view_inventory', 'view_suppliers', 'view_customers', 'view_warehouses',
+    'view_reports', 'export_reports', 'view_audit_logs', 'manage_users',
+];
+
 export const ROLE_PERMISSIONS = {
-    super_admin: ALL,
-    admin: ALL,
+    super_admin: [...ADMIN_READ_ONLY, 'system_settings'],
+    admin: ADMIN_READ_ONLY,
     inventory_manager: [
-        'view_inventory', 'add_product', 'edit_product', 'delete_product',
+        'view_inventory', 'view_suppliers', 'view_customers', 'view_warehouses',
+        'add_product', 'edit_product', 'delete_product',
         'receive_stock', 'issue_stock', 'transfer_stock', 'adjust_stock', 'count_stock',
         'manage_stock_receipts', 'approve_stock_receipts', 'approve_stock_issues',
         'override_stock_issue', 'approve_stock_counts', 'approve_transactions',
@@ -75,19 +91,24 @@ export const ROLE_PERMISSIONS = {
         'manage_purchase_orders', 'view_reports', 'export_reports',
     ],
     storekeeper: [
-        'view_inventory', 'receive_stock', 'issue_stock', 'transfer_stock',
+        'view_inventory', 'view_suppliers', 'view_customers', 'view_warehouses',
+        'receive_stock', 'issue_stock', 'transfer_stock',
         'count_stock', 'manage_stock_receipts', 'adjust_stock', 'view_reports',
     ],
     procurement_officer: [
-        'view_inventory', 'manage_suppliers', 'manage_purchase_orders',
+        'view_inventory', 'view_suppliers', 'view_customers', 'view_warehouses',
+        'manage_suppliers', 'manage_purchase_orders',
         'manage_stock_receipts', 'view_reports', 'export_reports',
     ],
     sales_officer: [
-        'view_inventory', 'manage_customers', 'manage_sales_orders',
+        'view_inventory', 'view_suppliers', 'view_customers', 'view_warehouses',
+        'manage_customers', 'manage_sales_orders',
         'issue_stock', 'view_reports',
     ],
-    auditor: ['view_inventory', 'view_reports', 'export_reports', 'view_audit_logs'],
-    read_only: ['view_inventory'],
+    auditor: ['view_inventory', 'view_suppliers', 'view_customers', 'view_warehouses', 'view_reports', 'export_reports', 'view_audit_logs'],
+    // Read-only can see the dashboard too: it is entirely read-only analytics,
+    // and the dashboard is the landing page every authenticated user gets.
+    read_only: ['view_inventory', 'view_suppliers', 'view_customers', 'view_warehouses', 'view_reports'],
 };
 
 /**

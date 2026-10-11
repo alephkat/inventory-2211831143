@@ -4,11 +4,12 @@ import { validate } from '../../shared/middlewares/validate.js';
 import { requirePermission } from '../../shared/middlewares/auth.js';
 import { getPagination } from '../../shared/utils/response.js';
 import { z } from 'zod';
+import { zambianPhone } from '../../shared/schemas/phone.js';
 const CustomerSchema = z.object({
     name: z.string().min(1),
     code: z.string().optional(),
     contactPerson: z.string().optional().nullable(),
-    phone: z.string().optional().nullable(),
+    phone: zambianPhone,
     email: z.string().email().optional().nullable(),
     address: z.string().optional().nullable(),
     taxId: z.string().optional().nullable(),
@@ -17,8 +18,9 @@ const CustomerSchema = z.object({
 });
 const UpdateCustomerSchema = CustomerSchema.partial();
 export const customersRouter = Router();
-customersRouter.use(requirePermission('manage_customers'));
-customersRouter.get('/', async (req, res, next) => {
+// Reads only need the view permission; every mutation and workflow
+// transition needs the manage permission.
+customersRouter.get('/', requirePermission(['view_customers', 'manage_customers']), async (req, res, next) => {
     try {
         res.json({ success: true, data: await customerService.list({ ...getPagination(req.query), search: req.query.search }) });
     }
@@ -26,7 +28,7 @@ customersRouter.get('/', async (req, res, next) => {
         next(e);
     }
 });
-customersRouter.get('/:id', async (req, res, next) => {
+customersRouter.get('/:id', requirePermission(['view_customers', 'manage_customers']), async (req, res, next) => {
     try {
         res.json({ success: true, data: await customerService.get(req.params.id) });
     }
@@ -34,7 +36,7 @@ customersRouter.get('/:id', async (req, res, next) => {
         next(e);
     }
 });
-customersRouter.post('/', validate(CustomerSchema), async (req, res, next) => {
+customersRouter.post('/', requirePermission('manage_customers'), validate(CustomerSchema), async (req, res, next) => {
     try {
         res.status(201).json({ success: true, data: await customerService.create(req.body, req.user.id) });
     }
@@ -42,7 +44,7 @@ customersRouter.post('/', validate(CustomerSchema), async (req, res, next) => {
         next(e);
     }
 });
-customersRouter.put('/:id', validate(UpdateCustomerSchema), async (req, res, next) => {
+customersRouter.put('/:id', requirePermission('manage_customers'), validate(UpdateCustomerSchema), async (req, res, next) => {
     try {
         res.json({ success: true, data: await customerService.update(req.params.id, req.body) });
     }
@@ -50,7 +52,7 @@ customersRouter.put('/:id', validate(UpdateCustomerSchema), async (req, res, nex
         next(e);
     }
 });
-customersRouter.delete('/:id', async (req, res, next) => {
+customersRouter.delete('/:id', requirePermission('manage_customers'), async (req, res, next) => {
     try {
         res.json({ success: true, data: await customerService.delete(req.params.id, req.user.id) });
     }

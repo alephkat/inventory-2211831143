@@ -38,7 +38,7 @@ const CancelSchema = z.object({
     reason: z.string().optional(),
 });
 export const purchaseOrdersRouter = Router();
-purchaseOrdersRouter.get('/', requirePermission('manage_purchase_orders'), async (req, res, next) => {
+purchaseOrdersRouter.get('/', requirePermission(['manage_purchase_orders', 'view_inventory']), async (req, res, next) => {
     try {
         const pg = getPagination(req.query);
         res.json({

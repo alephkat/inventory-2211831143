@@ -65,7 +65,7 @@ export class SalesOrderService {
                 customerId: data.customerId,
                 warehouseId: data.warehouseId,
                 expectedDate: data.expectedDate,
-                currency: data.currency ?? 'USD',
+                currency: data.currency ?? 'ZMW',
                 createdById: userId,
             },
         });

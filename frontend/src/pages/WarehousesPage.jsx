@@ -4,7 +4,7 @@ import { Building2, Pencil, Plus, Trash2 } from "lucide-react";
 import { api, normalizeList } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/lib/ToastProvider";
-import { errorMessage, formatNumber } from "@/lib/format";
+import { errorMessage, formatNumber, formatZambianPhone, isZambianPhone } from "@/lib/format";
 import { Alert, Badge, Button, Card, Field, Input, PageHeader } from "@/components/ui";
 import { DataTable } from "@/components/DataTable";
 import { ConfirmDialog } from "@/components/feedback";
@@ -82,6 +82,10 @@ function WarehousesPage() {
       setFormError("Current capacity cannot exceed the maximum.");
       return;
     }
+    if (!isZambianPhone(form.phone)) {
+      setFormError("Enter a Zambian phone number, e.g. 0977 123 456 or +260 977 123 456.");
+      return;
+    }
     save.mutate(form);
   };
   const resetForm = () => {
@@ -112,7 +116,7 @@ function WarehousesPage() {
           <p className="truncate text-xs text-slate-500">
             {warehouse.contactPerson ?? ""}
             {warehouse.contactPerson && warehouse.phone ? " \xB7 " : ""}
-            {warehouse.phone ?? ""}
+            {warehouse.phone ? formatZambianPhone(warehouse.phone) : ""}
           </p>
         </div>
     },
@@ -232,9 +236,12 @@ function WarehousesPage() {
             <Field label="Phone" htmlFor="warehouse-phone">
               <Input
     id="warehouse-phone"
+    type="tel"
+    inputMode="tel"
+    autoComplete="tel"
     value={form.phone}
     onChange={(event) => setForm({ ...form, phone: event.target.value })}
-    placeholder="Optional"
+    placeholder="0977 123 456"
   />
             </Field>
             <Field label="Manager" htmlFor="warehouse-manager" className="lg:col-span-2">
