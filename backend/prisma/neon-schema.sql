@@ -56,7 +56,6 @@ CREATE TABLE IF NOT EXISTS "User" (
     "role" "UserRole" NOT NULL DEFAULT 'read_only',
     "status" "UserStatus" NOT NULL DEFAULT 'ACTIVE',
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "profileImage" TEXT,
     "warehouseId" TEXT,
     "lastLogin" TIMESTAMP(3),
     "createdBy" TEXT,
@@ -75,8 +74,6 @@ CREATE TABLE IF NOT EXISTS "UserSession" (
     "expiresAt" TIMESTAMP(3) NOT NULL,
     "userAgent" TEXT,
     "ipAddress" TEXT,
-    "deviceInfo" TEXT,
-    "usedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "UserSession_pkey" PRIMARY KEY ("id")
@@ -88,7 +85,6 @@ CREATE TABLE IF NOT EXISTS "Category" (
     "name" TEXT NOT NULL,
     "description" TEXT,
     "parentId" TEXT,
-    "imageUrl" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -191,7 +187,6 @@ CREATE TABLE IF NOT EXISTS "Product" (
     "serialNumber" TEXT,
     "manufacturingDate" TIMESTAMP(3),
     "expiryDate" TIMESTAMP(3),
-    "imageUrl" TEXT,
     "status" "ProductStatus" NOT NULL DEFAULT 'ACTIVE',
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdBy" TEXT,
@@ -215,7 +210,6 @@ CREATE TABLE IF NOT EXISTS "Inventory" (
     "reorderQuantity" DOUBLE PRECISION,
     "stockValue" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "lastUpdated" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "lastTransactionId" TEXT,
 
     CONSTRAINT "Inventory_pkey" PRIMARY KEY ("id")
 );

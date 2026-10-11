@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { prisma } from '../../shared/config/database.js';
 import { ApiError } from '../../shared/errors/ApiError.js';
 import { createAuditLog } from '../../shared/utils/audit.js';
@@ -62,6 +63,7 @@ export class ProductService {
         const created = await prisma.product.create({
             data: {
                 ...data,
+                sku: data.sku ?? (await this.generateSku()),
                 createdBy: userId,
             },
         });
@@ -81,6 +83,20 @@ export class ProductService {
         }
         await createAuditLog({ userId, action: 'CREATE', resourceType: 'product', resourceId: created.id });
         return this.get(created.id);
+    }
+    /**
+     * Generates a unique SKU (`PRD-XXXXXXXX`) for products created without
+     * one. Retries on the (rare) collision so a duplicate insert never
+     * surfaces as an opaque unique-constraint error.
+     */
+    async generateSku() {
+        for (let attempt = 0; attempt < 5; attempt++) {
+            const candidate = `PRD-${randomBytes(4).toString('hex').toUpperCase()}`;
+            const existing = await prisma.product.findUnique({ where: { sku: candidate }, select: { id: true } });
+            if (!existing)
+                return candidate;
+        }
+        throw ApiError.conflict('Could not generate a unique SKU, please try again');
     }
     async update(id, data, userId) {
         await this.get(id);
@@ -144,7 +160,6 @@ export class ProductService {
             serialNumber: p.serialNumber,
             manufacturingDate: p.manufacturingDate,
             expiryDate: p.expiryDate,
-            imageUrl: p.imageUrl,
             status: p.status,
             isActive: p.isActive,
             createdBy: p.createdBy,

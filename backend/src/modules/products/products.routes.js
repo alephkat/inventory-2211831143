@@ -5,7 +5,9 @@ import { requirePermission } from '../../shared/middlewares/auth.js';
 import { getPagination } from '../../shared/utils/response.js';
 import { z } from 'zod';
 const ProductSchema = z.object({
-    sku: z.string().min(1),
+    // Optional: when omitted the system generates a unique SKU. SKUs stay
+    // searchable and shown in the UI, but operators no longer type them.
+    sku: z.string().min(1).optional(),
     barcode: z.string().optional().nullable(),
     name: z.string().min(1),
     description: z.string().optional().nullable(),
@@ -23,7 +25,6 @@ const ProductSchema = z.object({
     serialNumber: z.string().optional().nullable(),
     manufacturingDate: z.coerce.date().optional().nullable(),
     expiryDate: z.coerce.date().optional().nullable(),
-    imageUrl: z.string().url().optional().nullable(),
     status: z.enum(['ACTIVE', 'INACTIVE', 'DISCONTINUED', 'OUT_OF_STOCK']).default('ACTIVE'),
 });
 const UpdateProductSchema = ProductSchema.partial();

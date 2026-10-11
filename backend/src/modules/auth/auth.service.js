@@ -169,7 +169,6 @@ export class AuthService {
             permissions: permissionsForRole(user.role),
             status: user.status,
             isActive: user.isActive,
-            profileImage: user.profileImage,
             warehouseId: user.warehouseId,
             lastLogin: user.lastLogin,
             createdAt: user.createdAt,

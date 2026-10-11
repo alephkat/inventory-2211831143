@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, CheckCheck, X } from "lucide-react";
 import { api, normalizeList } from "@/lib/api";
@@ -30,6 +31,16 @@ function NotificationPanel({ open, onClose }) {
       void queryClient.invalidateQueries({ queryKey: ["notifications"] });
     }
   });
+  // Escape closes the panel: the backdrop covers the header, so the bell is
+  // not always reachable while it is open.
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, onClose]);
   if (!open) return null;
   return <>
       <div className="fixed inset-0 z-30" onClick={onClose} aria-hidden />

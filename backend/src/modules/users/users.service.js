@@ -17,7 +17,6 @@ const USER_PUBLIC_SELECT = {
     role: true,
     status: true,
     isActive: true,
-    profileImage: true,
     warehouseId: true,
     lastLogin: true,
     createdBy: true,

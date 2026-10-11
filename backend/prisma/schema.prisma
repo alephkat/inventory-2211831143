@@ -16,7 +16,6 @@ model User {
   role          UserRole     @default(read_only)
   status        UserStatus   @default(ACTIVE)
   isActive      Boolean      @default(true)
-  profileImage  String?
   warehouseId   String?
   warehouse     Warehouse?   @relation(fields: [warehouseId], references: [id])
   lastLogin     DateTime?
@@ -84,8 +83,6 @@ model UserSession {
   expiresAt    DateTime
   userAgent    String?
   ipAddress    String?
-  deviceInfo   String?
-  usedAt       DateTime?
   createdAt    DateTime @default(now())
 }
 
@@ -96,7 +93,6 @@ model Category {
   parentId    String?
   parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children    Category[] @relation("CategoryHierarchy")
-  imageUrl    String?
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -223,7 +219,6 @@ model Product {
   serialNumber    String?
   manufacturingDate DateTime?
   expiryDate      DateTime?
-  imageUrl        String?
   status          ProductStatus @default(ACTIVE)
   isActive        Boolean       @default(true)
   createdBy       String?
@@ -282,7 +277,6 @@ model Inventory {
   reorderQuantity  Float?
   stockValue       Float    @default(0)
   lastUpdated      DateTime @default(now())
-  lastTransactionId String?
 
   @@unique([productId, warehouseId])
 }

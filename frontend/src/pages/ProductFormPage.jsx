@@ -8,7 +8,6 @@ import { errorMessage } from "@/lib/format";
 import { Alert, Button, Card, CardHeader, Field, Input, LoadingBlock, PageHeader, Select, Textarea } from "@/components/ui";
 import { UNITS } from "@/types";
 const EMPTY_FORM = {
-  sku: "",
   barcode: "",
   name: "",
   description: "",
@@ -65,7 +64,6 @@ function ProductFormPage() {
     if (!product.data) return;
     const p = product.data;
     setForm({
-      sku: p.sku ?? "",
       barcode: p.barcode ?? "",
       name: p.name ?? "",
       description: p.description ?? "",
@@ -103,7 +101,6 @@ function ProductFormPage() {
   const validate = () => {
     const next = {};
     if (!form.name.trim()) next.name = "Product name is required.";
-    if (!form.sku.trim()) next.sku = "SKU is required.";
     if (!form.categoryId) next.categoryId = "Choose a category.";
     if (!form.supplierId) next.supplierId = "Choose a supplier.";
     if (form.costPrice === "" || Number(form.costPrice) < 0) {
@@ -134,7 +131,6 @@ function ProductFormPage() {
     event.preventDefault();
     if (!validate()) return;
     mutation.mutate({
-      sku: form.sku.trim(),
       barcode: toNullable(form.barcode),
       name: form.name.trim(),
       description: toNullable(form.description),
@@ -211,9 +207,6 @@ function ProductFormPage() {
         <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
           <Field label="Product name" htmlFor="name" required error={errors.name}>
             <Input id="name" value={form.name} onChange={update("name")} invalid={Boolean(errors.name)} placeholder="Wireless barcode scanner" />
-          </Field>
-          <Field label="SKU" htmlFor="sku" required error={errors.sku} hint="Unique stock keeping unit code">
-            <Input id="sku" value={form.sku} onChange={update("sku")} invalid={Boolean(errors.sku)} placeholder="WBS-001" />
           </Field>
           <Field label="Barcode" htmlFor="barcode" hint="EAN, UPC or any scanned code">
             <Input id="barcode" value={form.barcode} onChange={update("barcode")} placeholder="5901234123457" />

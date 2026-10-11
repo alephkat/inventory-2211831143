@@ -238,9 +238,10 @@ function Layout() {
 
           <div className="relative flex items-center gap-1">
             <button
-    className="relative rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+    className="relative z-40 rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
     onClick={() => setIsNotificationsOpen((open) => !open)}
     aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ""}`}
+    aria-expanded={isNotificationsOpen}
   >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 ? <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">

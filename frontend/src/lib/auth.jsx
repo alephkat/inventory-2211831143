@@ -8,7 +8,6 @@ import {
 } from "react";
 import { api, onUnauthorized, refreshAccessToken, tokenStore } from "./api.js";
 const AuthContext = createContext(null);
-const SUPER_ADMIN = "super_admin";
 function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,7 +69,10 @@ function AuthProvider({ children }) {
   const can = useCallback(
     (permission) => {
       if (!user) return false;
-      if (user.role === SUPER_ADMIN) return true;
+      // Permissions come from the role map in backend
+      // src/shared/types/permissions.js, recomputed on every request. No role
+      // is hardcoded as all-powerful here: super_admin is read-only for
+      // operational data, like admin, and can only be changed in that map.
       return user.permissions.includes(permission);
     },
     [user]
