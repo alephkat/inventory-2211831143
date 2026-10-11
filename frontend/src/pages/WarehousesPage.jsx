@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, Pencil, Plus, Trash2 } from "lucide-react";
 import { api, normalizeList } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { useToast } from "@/lib/ToastProvider";
 import { errorMessage, formatNumber } from "@/lib/format";
 import { Alert, Badge, Button, Card, Field, Input, PageHeader } from "@/components/ui";
@@ -22,6 +23,8 @@ const toNullableNumber = (value) => value.trim() === "" ? null : Number(value);
 function WarehousesPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { can } = useAuth();
+  const canManage = can("manage_warehouses");
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
   const [formError, setFormError] = useState("");
@@ -86,7 +89,7 @@ function WarehousesPage() {
     setForm(EMPTY_FORM);
     setFormError("");
   };
-  const columns = [
+  const allColumns = [
     {
       key: "name",
       header: "Warehouse",
@@ -192,13 +195,14 @@ function WarehousesPage() {
         </div>
     }
   ];
+  const columns = canManage ? allColumns : allColumns.filter((column) => column.key !== "actions");
   return <div className="space-y-5">
       <PageHeader
     title="Warehouses"
     description={`${list.length} location${list.length === 1 ? "" : "s"} configured`}
   />
 
-      <Card>
+      {canManage && <Card>
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Field label="Warehouse name" htmlFor="warehouse-name" required>
@@ -290,6 +294,7 @@ function WarehousesPage() {
           </div>
         </form>
       </Card>
+      }
 
       <Card padded={false}>
         <DataTable

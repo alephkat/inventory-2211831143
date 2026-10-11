@@ -41,6 +41,8 @@ function UsersPage() {
   const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { can } = useAuth();
+  const canManage = can("manage_users");
   const searchTimer = useRef();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -163,7 +165,7 @@ function UsersPage() {
     setFormError("");
     updateUser.mutate(form);
   };
-  const columns = [
+  const allColumns = [
     {
       key: "name",
       header: "User",
@@ -242,17 +244,18 @@ function UsersPage() {
         >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button> : null}
-          </div>;
+           </div>;
       }
     }
   ];
+  const columns = canManage ? allColumns : allColumns.filter((column) => column.key !== "actions");
   return <div className="space-y-5">
       <PageHeader
     title="Users"
     description={`${list.total} account${list.total === 1 ? "" : "s"}`}
   />
 
-      <Card>
+      {canManage && <Card>
         <h2 className="mb-4 text-sm font-semibold text-slate-900">
           {editingId ? `Editing ${form.fullName}` : "Create a user"}
         </h2>
@@ -342,11 +345,11 @@ function UsersPage() {
             {editingId ? <Button variant="secondary" onClick={resetForm}>
                 Cancel edit
               </Button> : null}
-          </div>
-        </div>
-      </Card>
+           </div>
+         </div>
+       </Card>}
 
-      <Card padded={false}>
+       <Card padded={false}>
         <div className="grid gap-3 border-b border-slate-200 p-4 sm:grid-cols-3">
           <Field label="Search" className="sm:col-span-1">
             <div className="relative">

@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ban, Check, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { api, normalizeList } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { useToast } from "@/lib/ToastProvider";
 import { errorMessage } from "@/lib/format";
 import {
@@ -32,6 +33,8 @@ const toNullable = (value) => value.trim() === "" ? null : value.trim();
 function SuppliersPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { can } = useAuth();
+  const canManage = can("manage_suppliers");
   const searchTimer = useRef();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -133,7 +136,7 @@ function SuppliersPage() {
       why: reason.trim()
     });
   };
-  const columns = [
+  const allColumns = [
     {
       key: "name",
       header: "Supplier",
@@ -279,6 +282,7 @@ function SuppliersPage() {
         </div>
     }
   ];
+  const columns = canManage ? allColumns : allColumns.filter((column) => column.key !== "actions");
   const reasonCopy = {
     reject: {
       title: "Reject supplier",
@@ -305,7 +309,7 @@ function SuppliersPage() {
     description={`${list.total} supplier${list.total === 1 ? "" : "s"} on record`}
   />
 
-      <Card>
+      {canManage && <Card>
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Field label="Supplier name" htmlFor="supplier-name" required>
@@ -399,6 +403,7 @@ function SuppliersPage() {
           </p>
         </form>
       </Card>
+      }
 
       <Card padded={false}>
         <div className="grid gap-3 border-b border-slate-200 p-4 sm:grid-cols-3">

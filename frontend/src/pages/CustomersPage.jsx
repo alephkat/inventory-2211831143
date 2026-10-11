@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { api, normalizeList } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { useToast } from "@/lib/ToastProvider";
 import { errorMessage } from "@/lib/format";
 import { Alert, Badge, Button, Card, Field, Input, PageHeader } from "@/components/ui";
@@ -21,6 +22,8 @@ const toNullable = (value) => value.trim() === "" ? null : value.trim();
 function CustomersPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { can } = useAuth();
+  const canManage = can("manage_customers");
   const searchTimer = useRef();
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
@@ -89,7 +92,7 @@ function CustomersPage() {
     }
     save.mutate(form);
   };
-  const columns = [
+  const allColumns = [
     {
       key: "name",
       header: "Customer",
@@ -170,13 +173,14 @@ function CustomersPage() {
         </div>
     }
   ];
+  const columns = canManage ? allColumns : allColumns.filter((column) => column.key !== "actions");
   return <div className="space-y-5">
       <PageHeader
     title="Customers"
     description={`${list.total} customer${list.total === 1 ? "" : "s"} on record`}
   />
 
-      <Card>
+      {canManage && <Card>
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Field label="Customer name" htmlFor="customer-name" required>
@@ -266,6 +270,7 @@ function CustomersPage() {
           </div>
         </form>
       </Card>
+      }
 
       <Card padded={false}>
         <div className="border-b border-slate-200 p-4">

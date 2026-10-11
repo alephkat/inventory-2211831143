@@ -132,3 +132,15 @@
 .recharts-surface:focus {
   outline: none;
 }
+
+/* Scrollable areas (sidebar nav, filter rails) keep scrollability but do not
+   render a scrollbar: a permanent bar next to the nav looks like a layout bug
+   on Windows/Linux Chrome, where classic scrollbars take up space. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

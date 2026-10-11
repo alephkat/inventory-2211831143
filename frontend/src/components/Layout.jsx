@@ -180,7 +180,7 @@ function Layout() {
           </button>
         </div>
 
-        <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
+        <nav className="no-scrollbar flex-1 space-y-6 overflow-y-auto px-3 py-5">
           {visibleGroups.map((group) => <div key={group.label}>
               <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                 {group.label}
