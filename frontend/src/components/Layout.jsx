@@ -51,13 +51,13 @@ const NAV_GROUPS = [
         label: "Suppliers",
         to: "/suppliers",
         icon: <Truck className="h-4.5 w-4.5" />,
-        permissions: ["manage_suppliers"]
+        permissions: ["view_suppliers"]
       },
       {
         label: "Customers",
         to: "/customers",
         icon: <Users className="h-4.5 w-4.5" />,
-        permissions: ["manage_customers"]
+        permissions: ["view_customers"]
       }
     ]
   },
@@ -68,7 +68,7 @@ const NAV_GROUPS = [
         label: "Warehouses",
         to: "/warehouses",
         icon: <Warehouse className="h-4.5 w-4.5" />,
-        permissions: ["manage_warehouses"]
+        permissions: ["view_warehouses"]
       },
       {
         label: "Stock levels",
@@ -91,13 +91,13 @@ const NAV_GROUPS = [
         label: "Purchase orders",
         to: "/purchase-orders",
         icon: <ShoppingCart className="h-4.5 w-4.5" />,
-        permissions: ["manage_purchase_orders"]
+        permissions: ["view_inventory"]
       },
       {
         label: "Sales orders",
         to: "/sales-orders",
         icon: <ClipboardList className="h-4.5 w-4.5" />,
-        permissions: ["manage_sales_orders"]
+        permissions: ["view_inventory"]
       }
     ]
   },
