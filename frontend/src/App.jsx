@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes, useLocation, Suspense, lazy } from "react-router-dom";
+import { lazy, Suspense } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { AuthGate, Layout } from "@/components/Layout";
 import { ToastProvider } from "@/lib/ToastProvider";

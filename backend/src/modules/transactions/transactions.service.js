@@ -87,16 +87,17 @@ export class TransactionService {
             where.type = normalizeType(type);
         if (status)
             where.status = status;
+        const keyset = {};
         if (cursor) {
             const { createdAt, id } = decodeCursor(cursor);
-            where.OR = [
+            keyset.OR = [
                 { createdAt: { lt: createdAt } },
                 { createdAt: createdAt, id: { lt: id } },
             ];
         }
         const [items, total] = await Promise.all([
             prisma.inventoryTransaction.findMany({
-                where,
+                where: { ...where, ...keyset },
                 ...(cursor ? {} : { skip: (page - 1) * limit }),
                 take: limit,
                 include: {
@@ -107,6 +108,8 @@ export class TransactionService {
                 },
                 orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
             }),
+            // Count without the keyset predicate: the UI shows the
+            // grand total, not the number of rows left after the cursor.
             prisma.inventoryTransaction.count({ where }),
         ]);
         const last = items[items.length - 1];

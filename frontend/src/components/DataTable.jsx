@@ -108,7 +108,55 @@ function Pagination({ page, limit, total, onPageChange, onLimitChange }) {
       </div>
     </div>;
 }
+function CursorPagination({ total, shownFrom, shownTo, limit, hasNext, canGoBack, onNext, onPrev, onLimitChange }) {
+  const first = total === 0 ? 0 : shownFrom
+  const last = Math.min(shownTo, total)
+  return <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-4 py-3">
+      <p className="text-xs text-slate-500">
+        Showing <span className="font-medium text-slate-700">{first}</span>–
+        <span className="font-medium text-slate-700">{last}</span> of{" "}
+        <span className="font-medium text-slate-700">{total}</span>
+      </p>
+
+      <div className="flex items-center gap-3">
+        {onLimitChange ? <label className="flex items-center gap-1.5 text-xs text-slate-500">
+            Rows
+            <select
+              value={limit}
+              onChange={(event) => onLimitChange(Number(event.target.value))}
+              className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            >
+              {LIMIT_OPTIONS.map((option) => <option key={option} value={option}>
+                  {option}
+                </option>)}
+            </select>
+          </label> : null}
+
+        <div className="flex items-center gap-1">
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={!canGoBack}
+            onClick={onPrev}
+            aria-label="Previous page"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={!hasNext}
+            onClick={onNext}
+            aria-label="Next page"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>;
+}
 export {
   DataTable,
-  Pagination
+  Pagination,
+  CursorPagination
 };

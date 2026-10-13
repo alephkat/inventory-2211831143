@@ -16,7 +16,7 @@ import {
   Select,
   Textarea
 } from "@/components/ui";
-import { DataTable, Pagination } from "@/components/DataTable";
+import { DataTable, CursorPagination } from "@/components/DataTable";
 import { StatusBadge } from "@/components/StatusBadge";
 const TYPE_OPTIONS = ["RECEIVED", "ISSUED", "RETURNED"];
 const STATUS_OPTIONS = ["PENDING", "COMPLETED", "APPROVED", "REJECTED", "CANCELLED"];
@@ -33,8 +33,9 @@ function TransactionsPage() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
   const toast = useToast();
-  const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
+  const [cursor, setCursor] = useState(null);
+  const [backStack, setBackStack] = useState([]);
   const [type, setType] = useState("");
   const [status, setStatus] = useState("");
   const [warehouseId, setWarehouseId] = useState("");
@@ -44,10 +45,10 @@ function TransactionsPage() {
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const transactions = useQuery({
-    queryKey: ["transactions", "list", type, status, warehouseId, page, limit],
+    queryKey: ["transactions", "list", type, status, warehouseId, cursor, limit],
     queryFn: () => api.get("/api/v1/transactions", {
-      page,
       limit,
+      cursor: cursor || void 0,
       type: type || void 0,
       status: status || void 0,
       warehouseId: warehouseId || void 0
@@ -72,6 +73,22 @@ function TransactionsPage() {
     void queryClient.invalidateQueries({ queryKey: ["inventory"] });
     void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+  };
+  const resetPaging = () => {
+    setCursor(null);
+    setBackStack([]);
+  };
+  const goNext = () => {
+    const next = transactions.data?.nextCursor;
+    if (!next) return;
+    setBackStack((stack) => [...stack, cursor]);
+    setCursor(next);
+  };
+  const goPrev = () => {
+    if (backStack.length === 0) return;
+    const previous = backStack[backStack.length - 1];
+    setBackStack(backStack.slice(0, -1));
+    setCursor(previous);
   };
   const createTransaction = useMutation({
     mutationFn: (payload) => api.post("/api/v1/transactions", {
@@ -236,7 +253,7 @@ function TransactionsPage() {
     value={type}
     onChange={(event) => {
       setType(event.target.value);
-      setPage(1);
+      resetPaging();
     }}
   >
               <option value="">All types</option>
@@ -250,7 +267,7 @@ function TransactionsPage() {
     value={status}
     onChange={(event) => {
       setStatus(event.target.value);
-      setPage(1);
+      resetPaging();
     }}
   >
               <option value="">All statuses</option>
@@ -264,7 +281,7 @@ function TransactionsPage() {
     value={warehouseId}
     onChange={(event) => {
       setWarehouseId(event.target.value);
-      setPage(1);
+      resetPaging();
     }}
   >
               <option value="">All warehouses</option>
@@ -285,14 +302,18 @@ function TransactionsPage() {
     emptyDescription="Record a movement to see it appear here."
   />
 
-        {list.total > 0 ? <Pagination
-    page={page}
-    limit={limit}
+        {list.total > 0 ? <CursorPagination
     total={list.total}
-    onPageChange={setPage}
+    shownFrom={backStack.length * limit + 1}
+    shownTo={backStack.length * limit + list.items.length}
+    limit={limit}
+    hasNext={Boolean(transactions.data?.nextCursor)}
+    canGoBack={backStack.length > 0}
+    onNext={goNext}
+    onPrev={goPrev}
     onLimitChange={(value) => {
       setLimit(value);
-      setPage(1);
+      resetPaging();
     }}
   /> : null}
       </Card>
