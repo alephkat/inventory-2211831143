@@ -6,6 +6,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
+import compression from 'compression';
 import { config } from './shared/config/env.js';
 import { notFoundHandler } from './shared/middlewares/notFound.js';
 import { errorHandler } from './shared/errors/errorHandler.js';
@@ -24,6 +25,7 @@ export const createApp = () => {
         app.use(morgan('dev'));
     }
     app.use(helmet());
+    app.use(compression());
     // CORS_ORIGIN is a comma-separated allowlist. The cors package compares
     // a string origin for exact equality only, so the list has to be split here
     // or every entry after the first is silently ignored.
@@ -36,7 +38,6 @@ export const createApp = () => {
         credentials: true,
     }));
     app.use(express.json({ limit: '10mb' }));
-    app.use(express.urlencoded({ extended: true }));
     const limiter = rateLimit({
         windowMs: config.rateLimit.windowMs,
         max: config.rateLimit.max,
@@ -49,8 +50,17 @@ export const createApp = () => {
     app.use('/api/v1/auth', authRouter);
     app.use('/api/v1', requireAuth, registerRoutes);
     if (hasWebBuild) {
-        app.use(express.static(WEB_DIST, { index: false, maxAge: '1y' }));
+        app.use(express.static(WEB_DIST, {
+            index: false,
+            maxAge: '1y',
+            setHeaders: (res, filePath) => {
+                if (filePath.endsWith('.html')) {
+                    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+                }
+            }
+        }));
         app.get(/^\/(?!api\/).*/, (_req, res) => {
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
             res.sendFile(path.join(WEB_DIST, 'index.html'));
         });
     }

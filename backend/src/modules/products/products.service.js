@@ -5,6 +5,7 @@ import { createAuditLog } from '../../shared/utils/audit.js';
 export class ProductService {
     async list(params) {
         const { page, limit, search, categoryId, supplierId, warehouseId, status, lowStock } = params;
+        const skip = (page - 1) * limit;
         const where = { isActive: true };
         if (search) {
             where.OR = [
@@ -19,29 +20,79 @@ export class ProductService {
             where.supplierId = supplierId;
         if (status)
             where.status = status;
-        let items = await prisma.product.findMany({
-            where,
-            include: {
-                category: true,
-                supplier: true,
-                warehouse: true,
-                inventories: warehouseId
-                    ? { where: { warehouseId }, take: 1 }
-                    : { take: 1 },
-            },
-            orderBy: { createdAt: 'desc' },
-        });
+
+        let items;
+        let total;
         if (lowStock) {
-            items = items.filter((p) => {
-                const inv = p.inventories[0];
-                const current = inv?.currentQuantity ?? 0;
-                return current <= (p.reorderLevel > 0 ? p.reorderLevel : p.minStockLevel);
-            });
+            const warehouseFilter = warehouseId ? `AND i."warehouseId" = '${warehouseId}'` : '';
+            const searchFilter = search ? `
+                AND (
+                    p."name" ILIKE '%${search}%' 
+                    OR p."sku" ILIKE '%${search}%' 
+                    OR p."barcode" ILIKE '%${search}%'
+                )` : '';
+            const categoryFilter = categoryId ? `AND p."categoryId" = '${categoryId}'` : '';
+            const supplierFilter = supplierId ? `AND p."supplierId" = '${supplierId}'` : '';
+            const statusFilter = status ? `AND p."status" = '${status}'` : '';
+            const countQuery = `
+                SELECT COUNT(*)
+                FROM "Product" p
+                JOIN "Inventory" i ON i."productId" = p."id"
+                WHERE p."isActive" = true
+                AND i."currentQuantity" <= COALESCE(i."reorderQuantity", p."reorderLevel", 0)
+                ${warehouseFilter}
+                ${searchFilter}
+                ${categoryFilter}
+                ${supplierFilter}
+                ${statusFilter}
+            `;
+            const [countResult] = await prisma.$queryRawUnsafe(countQuery);
+            total = Number(countResult.count);
+            const dataQuery = `
+                SELECT
+                    p.*, i."currentQuantity", i."availableQuantity", i."reservedQuantity", i."stockValue",
+                    c."name" AS "categoryName", c."description" AS "categoryDescription",
+                    s."name" AS "supplierName", s."contactPerson" AS "supplierContact", s."email" AS "supplierEmail", s."phone" AS "supplierPhone",
+                    w."name" AS "warehouseName", w."code" AS "warehouseCode"
+                FROM "Product" p
+                JOIN "Inventory" i ON i."productId" = p."id"
+                LEFT JOIN "Category" c ON c."id" = p."categoryId"
+                LEFT JOIN "Supplier" s ON s."id" = p."supplierId"
+                LEFT JOIN "Warehouse" w ON w."id" = i."warehouseId"
+                WHERE p."isActive" = true
+                AND i."currentQuantity" <= COALESCE(i."reorderQuantity", p."reorderLevel", 0)
+                ${warehouseFilter}
+                ${searchFilter}
+                ${categoryFilter}
+                ${supplierFilter}
+                ${statusFilter}
+                ORDER BY p."createdAt" DESC
+                LIMIT ${limit} OFFSET ${skip}
+            `;
+            const rows = await prisma.$queryRawUnsafe(dataQuery);
+            items = rows.map((r) => this.enrichRaw(r));
+        } else {
+            const [data, count] = await Promise.all([
+                prisma.product.findMany({
+                    where,
+                    include: {
+                        category: true,
+                        supplier: true,
+                        warehouse: true,
+                        inventories: warehouseId
+                            ? { where: { warehouseId }, take: 1 }
+                            : { take: 1 },
+                    },
+                    orderBy: { createdAt: 'desc' },
+                    skip,
+                    take: limit,
+                }),
+                prisma.product.count({ where }),
+            ]);
+            items = data.map((p) => this.enrich(p));
+            total = count;
         }
-        const total = lowStock ? items.length : await prisma.product.count({ where });
-        const start = (page - 1) * limit;
-        const mapped = items.slice(start, start + limit).map((p) => this.enrich(p));
-        return { items: mapped, total, page, limit };
+        return { items, total, page, limit };
     }
     async get(id) {
         const p = await prisma.product.findUnique({
@@ -166,6 +217,46 @@ export class ProductService {
             updatedBy: p.updatedBy,
             createdAt: p.createdAt,
             updatedAt: p.updatedAt,
+            currentStock,
+            availableStock,
+            reservedStock,
+            stockValue,
+        };
+    }
+    enrichRaw(r) {
+        const currentStock = Number(r.currentQuantity ?? 0);
+        const availableStock = Number(r.availableQuantity ?? 0);
+        const reservedStock = Number(r.reservedQuantity ?? 0);
+        const stockValue = currentStock * (r.costPrice ?? 0) || Number(r.stockValue ?? 0);
+        return {
+            id: r.id,
+            sku: r.sku,
+            barcode: r.barcode,
+            name: r.name,
+            description: r.description,
+            categoryId: r.categoryId,
+            category: r.categoryName ? { id: r.categoryId, name: r.categoryName, description: r.categoryDescription } : null,
+            brand: r.brand,
+            unit: r.unit,
+            costPrice: r.costPrice,
+            sellingPrice: r.sellingPrice,
+            minStockLevel: r.minStockLevel,
+            maxStockLevel: r.maxStockLevel,
+            reorderLevel: r.reorderLevel,
+            supplierId: r.supplierId,
+            supplier: r.supplierName ? { id: r.supplierId, name: r.supplierName, contactPerson: r.supplierContact, email: r.supplierEmail, phone: r.supplierPhone } : null,
+            warehouseId: r.warehouseId,
+            warehouse: r.warehouseName ? { id: r.warehouseId, name: r.warehouseName, code: r.warehouseCode } : null,
+            batchNumber: r.batchNumber,
+            serialNumber: r.serialNumber,
+            manufacturingDate: r.manufacturingDate,
+            expiryDate: r.expiryDate,
+            status: r.status,
+            isActive: r.isActive,
+            createdBy: r.createdBy,
+            updatedBy: r.updatedBy,
+            createdAt: r.createdAt,
+            updatedAt: r.updatedAt,
             currentStock,
             availableStock,
             reservedStock,

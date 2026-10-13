@@ -37,5 +37,11 @@ export const config = {
         windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? '60000', 10),
         max: parseInt(process.env.RATE_LIMIT_MAX ?? '100', 10),
     },
+    db: {
+        // Prisma sizes its pool from the connection string; these are the
+        // fallbacks applied when DATABASE_URL carries no explicit hints.
+        poolSize: parseInt(process.env.DB_POOL_SIZE ?? '5', 10),
+        poolTimeout: parseInt(process.env.DB_POOL_TIMEOUT ?? '20', 10),
+    },
     corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:3000',
 };

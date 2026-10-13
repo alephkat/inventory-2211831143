@@ -1,10 +1,12 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  extensions = [pg_trgm]
 }
 
 model User {
@@ -237,6 +239,11 @@ model Product {
   issueItems      StockIssueItem[]
   supplierProducts SupplierProduct[]
   audits          AuditLog[] @relation("ProductAudits")
+
+  @@index([expiryDate])
+  @@index([categoryId])
+  @@index([supplierId])
+  @@index([name, description])
 }
 
 enum UnitOfMeasurement {
@@ -279,6 +286,7 @@ model Inventory {
   lastUpdated      DateTime @default(now())
 
   @@unique([productId, warehouseId])
+  @@index([currentQuantity])
 }
 
 enum TransactionType {
@@ -324,6 +332,11 @@ model InventoryTransaction {
   rejectionReason String?
   relatedTransferId String?
   relatedTransfer StockTransfer?  @relation(fields: [relatedTransferId], references: [id])
+
+  @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([productId, createdAt])
+  @@index([warehouseId, createdAt])
 }
 
 model StockTransfer {
@@ -517,6 +530,8 @@ model PurchaseOrder {
 
   items         PurchaseOrderItem[]
   receipts      StockReceipt[]
+
+  @@index([status, createdAt])
 }
 
 model PurchaseOrderItem {
@@ -689,6 +704,8 @@ model SalesOrder {
   updatedAt     DateTime     @updatedAt
 
   items         SalesOrderItem[]
+
+  @@index([status, createdAt])
 }
 
 model SalesOrderItem {
@@ -780,7 +797,6 @@ model Notification {
   createdAt     DateTime           @default(now())
   readAt        DateTime?
 
-  @@index([userId])
-  @@index([isRead])
-  @@index([createdAt])
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
 }

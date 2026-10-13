@@ -20,8 +20,22 @@ const ApproveSchema = z.object({
 export const transactionsRouter = Router();
 transactionsRouter.get('/', requirePermission('view_inventory'), async (req, res, next) => {
     try {
-        const pg = getPagination(req.query);
-        res.json({ success: true, data: await transactionService.list({ ...pg, productId: req.query.productId, warehouseId: req.query.warehouseId, type: req.query.type, status: req.query.status }) });
+        const { page, limit } = getPagination(req.query);
+        const cursor = typeof req.query.cursor === 'string' && req.query.cursor !== ''
+            ? req.query.cursor
+            : undefined;
+        res.json({
+            success: true,
+            data: await transactionService.list({
+                page,
+                limit,
+                cursor,
+                productId: req.query.productId,
+                warehouseId: req.query.warehouseId,
+                type: req.query.type,
+                status: req.query.status,
+            }),
+        });
     }
     catch (e) {
         next(e);
@@ -37,7 +51,7 @@ transactionsRouter.get('/:id', requirePermission('view_inventory'), async (req, 
 });
 transactionsRouter.post('/', requirePermission(['receive_stock', 'issue_stock']), validate(CreateTxSchema), async (req, res, next) => {
     try {
-        res.status(201).json({ success: true, data: await transactionService.create(req.body, req.user.id) });
+        res.status(201).json({ success: true, data: await transactionService.create(req.body, req.user.id, req.user.username, req.user.role) });
     }
     catch (e) {
         next(e);
@@ -45,7 +59,7 @@ transactionsRouter.post('/', requirePermission(['receive_stock', 'issue_stock'])
 });
 transactionsRouter.post('/:id/approve', requirePermission('approve_transactions'), async (req, res, next) => {
     try {
-        res.json({ success: true, data: await transactionService.approve(req.params.id, req.user.id) });
+        res.json({ success: true, data: await transactionService.approve(req.params.id, req.user.id, req.user.username) });
     }
     catch (e) {
         next(e);
@@ -53,7 +67,7 @@ transactionsRouter.post('/:id/approve', requirePermission('approve_transactions'
 });
 transactionsRouter.post('/:id/reject', requirePermission('approve_transactions'), validate(ApproveSchema), async (req, res, next) => {
     try {
-        res.json({ success: true, data: await transactionService.reject(req.params.id, req.user.id, req.body.rejectionReason) });
+        res.json({ success: true, data: await transactionService.reject(req.params.id, req.user.id, req.body.rejectionReason, req.user.username) });
     }
     catch (e) {
         next(e);

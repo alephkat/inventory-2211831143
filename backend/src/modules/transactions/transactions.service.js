@@ -2,6 +2,7 @@ import { prisma } from '../../shared/config/database.js';
 import { ApiError } from '../../shared/errors/ApiError.js';
 import { createAuditLog } from '../../shared/utils/audit.js';
 import { round2 } from '../../shared/workflow/guards.js';
+import { permissionsForRole } from '../../shared/types/permissions.js';
 import { TransactionStatus, AuditAction } from '@prisma/client';
 /**
  * Stock impact of each ledger type. Keyed by the Prisma enum, not by a
@@ -59,9 +60,24 @@ const normalizeType = (value) => {
     }
     return normalized;
 };
+/**
+ * Cursor for keyset pagination: the (createdAt, id) of the last row
+ * of a page, base64url-encoded. List ordering is (createdAt DESC,
+ * id DESC), so a page resumes exactly where the previous one ended —
+ * unlike OFFSET, the cost stays constant on deep pages.
+ */
+const encodeCursor = (row) => Buffer.from(`${row.createdAt.toISOString()}|${row.id}`).toString('base64url');
+const decodeCursor = (cursor) => {
+    const [createdAt, id] = Buffer.from(String(cursor), 'base64url').toString('utf8').split('|');
+    const date = new Date(createdAt);
+    if (!id || Number.isNaN(date.getTime())) {
+        throw ApiError.badRequest('Invalid pagination cursor');
+    }
+    return { createdAt: date, id };
+};
 export class TransactionService {
     async list(params) {
-        const { page, limit, productId, warehouseId, type, status } = params;
+        const { page, limit, cursor, productId, warehouseId, type, status } = params;
         const where = {};
         if (productId)
             where.productId = productId;
@@ -71,33 +87,43 @@ export class TransactionService {
             where.type = normalizeType(type);
         if (status)
             where.status = status;
+        if (cursor) {
+            const { createdAt, id } = decodeCursor(cursor);
+            where.OR = [
+                { createdAt: { lt: createdAt } },
+                { createdAt: createdAt, id: { lt: id } },
+            ];
+        }
         const [items, total] = await Promise.all([
             prisma.inventoryTransaction.findMany({
                 where,
-                skip: (page - 1) * limit,
+                ...(cursor ? {} : { skip: (page - 1) * limit }),
                 take: limit,
                 include: {
-                    product: true,
-                    warehouse: true,
+                    product: { select: { name: true, sku: true, unit: true } },
+                    warehouse: { select: { name: true } },
                     performedBy: { select: { id: true, fullName: true } },
                     approvedBy: { select: { id: true, fullName: true } },
                 },
-                orderBy: { createdAt: 'desc' },
+                orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
             }),
             prisma.inventoryTransaction.count({ where }),
         ]);
-        return { items, total, page, limit };
+        const last = items[items.length - 1];
+        return cursor
+            ? { items, total, limit, nextCursor: items.length === limit && last ? encodeCursor(last) : null }
+            : { items, total, page, limit };
     }
     async get(id) {
         const t = await prisma.inventoryTransaction.findUnique({
             where: { id },
-            include: { product: true, warehouse: true, performedBy: { select: { id: true, fullName: true } }, approvedBy: { select: { id: true, fullName: true } } },
+            include: { product: { select: { name: true, sku: true, unit: true } }, warehouse: { select: { name: true } }, performedBy: { select: { id: true, fullName: true } }, approvedBy: { select: { id: true, fullName: true } } },
         });
         if (!t)
             throw ApiError.notFound('Transaction not found');
         return t;
     }
-    async create(data, userId) {
+    async create(data, userId, userName, role = 'read_only') {
         const type = normalizeType(data.type);
         const direction = directionFor(type);
         const product = await prisma.product.findUnique({ where: { id: data.productId } });
@@ -119,48 +145,58 @@ export class TransactionService {
                 stockValue: 0,
             },
         });
-        const canApprove = await this.userCanApprove(userId);
+        const canApprove = permissionsForRole(role).includes('approve_transactions');
         const previousQuantity = inventory.currentQuantity;
         const newQuantity = previousQuantity + direction * data.quantity;
         const status = canApprove ? TransactionStatus.COMPLETED : TransactionStatus.PENDING;
-        if (canApprove) {
-            await prisma.inventory.update({
-                where: { id: inventory.id },
+        const tx = await prisma.$transaction(async (txClient) => {
+            if (canApprove) {
+                await txClient.inventory.update({
+                    where: { id: inventory.id },
+                    data: {
+                        currentQuantity: { increment: direction * data.quantity },
+                        availableQuantity: { increment: direction * data.quantity },
+                        stockValue: { increment: round2(direction * data.quantity * product.costPrice) },
+                        lastUpdated: new Date(),
+                    },
+                });
+            }
+            const created = await txClient.inventoryTransaction.create({
                 data: {
-                    currentQuantity: { increment: direction * data.quantity },
-                    availableQuantity: { increment: direction * data.quantity },
-                    stockValue: { increment: round2(direction * data.quantity * product.costPrice) },
-                    lastUpdated: new Date(),
+                    productId: data.productId,
+                    warehouseId: data.warehouseId,
+                    type,
+                    status,
+                    quantity: data.quantity,
+                    previousQuantity,
+                    newQuantity,
+                    referenceNumber: data.referenceNumber,
+                    reason: data.reason,
+                    batchNumber: data.batchNumber,
+                    expiryDate: data.expiryDate,
+                    performedById: userId,
+                },
+                include: {
+                    product: { select: { name: true, sku: true, unit: true } },
+                    warehouse: true,
+                    performedBy: { select: { id: true, fullName: true } },
+                    approvedBy: { select: { id: true, fullName: true } },
                 },
             });
-        }
-        const tx = await prisma.inventoryTransaction.create({
-            data: {
-                productId: data.productId,
-                warehouseId: data.warehouseId,
-                type,
-                status,
-                quantity: data.quantity,
-                previousQuantity,
-                newQuantity,
-                referenceNumber: data.referenceNumber,
-                reason: data.reason,
-                batchNumber: data.batchNumber,
-                expiryDate: data.expiryDate,
-                performedById: userId,
-            },
+            return created;
         });
         await createAuditLog({
             userId,
+            userName,
             action: AUDIT_ACTIONS[type],
             resourceType: 'inventory_transaction',
             resourceId: tx.id,
             oldValues: { currentQuantity: previousQuantity },
             newValues: { newQuantity, status },
         });
-        return this.get(tx.id);
+        return tx;
     }
-    async approve(id, userId) {
+    async approve(id, userId, userName) {
         const tx = await this.get(id);
         if (tx.status !== TransactionStatus.PENDING) {
             throw ApiError.badRequest('Only pending transactions can be approved');
@@ -178,7 +214,7 @@ export class TransactionService {
         if (direction < 0 && inventory.availableQuantity < tx.quantity) {
             throw ApiError.badRequest('Insufficient available stock for this transaction');
         }
-        await prisma.$transaction(async (transaction) => {
+        const updated = await prisma.$transaction(async (transaction) => {
             await transaction.inventory.update({
                 where: { id: inventory.id },
                 data: {
@@ -188,32 +224,38 @@ export class TransactionService {
                     lastUpdated: new Date(),
                 },
             });
-            await transaction.inventoryTransaction.update({
+            const updatedTx = await transaction.inventoryTransaction.update({
                 where: { id },
                 data: { status: TransactionStatus.COMPLETED, approvedById: userId, approvedAt: new Date() },
+                include: {
+                    product: { select: { name: true, sku: true, unit: true } },
+                    warehouse: true,
+                    performedBy: { select: { id: true, fullName: true } },
+                    approvedBy: { select: { id: true, fullName: true } },
+                },
             });
+            return updatedTx;
         });
-        await createAuditLog({ userId, action: 'APPROVE', resourceType: 'inventory_transaction', resourceId: id });
-        return this.get(id);
+        await createAuditLog({ userId, userName, action: 'APPROVE', resourceType: 'inventory_transaction', resourceId: id });
+        return updated;
     }
-    async reject(id, userId, reason) {
+    async reject(id, userId, reason, userName) {
         const tx = await this.get(id);
         if (tx.status !== TransactionStatus.PENDING) {
             throw ApiError.badRequest('Only pending transactions can be rejected');
         }
-        await prisma.inventoryTransaction.update({
+        const updated = await prisma.inventoryTransaction.update({
             where: { id },
             data: { status: TransactionStatus.REJECTED, approvedById: userId, approvedAt: new Date(), rejectionReason: reason },
-        });
-        await createAuditLog({ userId, action: 'REJECT', resourceType: 'inventory_transaction', resourceId: id });
-        return this.get(id);
-    }
-    async userCanApprove(userId) {
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-            include: { role: { include: { permissions: { include: { permission: true } } } } },
-        });
-        return !!user && user.role.permissions.some((rp) => rp.permission.value === 'approve_transactions');
+                include: {
+                    product: { select: { name: true, sku: true, unit: true } },
+                    warehouse: { select: { name: true } },
+                    performedBy: { select: { id: true, fullName: true } },
+                    approvedBy: { select: { id: true, fullName: true } },
+                },
+            });
+        await createAuditLog({ userId, userName, action: 'REJECT', resourceType: 'inventory_transaction', resourceId: id });
+        return updated;
     }
 }
 export const transactionService = new TransactionService();

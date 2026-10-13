@@ -20,7 +20,7 @@ export class StockLevelService {
                 where,
                 skip: (page - 1) * limit,
                 take: limit,
-                include: { product: true, warehouse: true },
+                include: { product: { select: { name: true, sku: true, unit: true, costPrice: true, minQuantity: true, reorderLevel: true } }, warehouse: { select: { name: true } } },
                 orderBy: { lastUpdated: 'desc' },
             }),
             prisma.inventory.count({ where }),
@@ -34,7 +34,7 @@ export class StockLevelService {
     async get(productId, warehouseId) {
         return prisma.inventory.findUnique({
             where: { productId_warehouseId: { productId, warehouseId } },
-            include: { product: true, warehouse: true },
+            include: {\n                    product: { select: { name: true, sku: true, unit: true, costPrice: true, minQuantity: true, reorderLevel: true } }, warehouse: true },
         });
     }
     /** Low-stock summary: inventories where current <= reorder level. */

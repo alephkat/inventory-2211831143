@@ -8,14 +8,10 @@ const toJson = (value) => (value ?? undefined);
 export const createAuditLog = async (input) => {
     const db = input.client ?? prisma;
     try {
-        const user = await db.user.findUnique({
-            where: { id: input.userId },
-            select: { fullName: true, username: true },
-        });
         await db.auditLog.create({
             data: {
                 userId: input.userId,
-                userName: user?.fullName || user?.username || input.userId,
+                userName: input.userName ?? undefined,
                 action: input.action,
                 resourceType: input.resourceType,
                 resourceId: input.resourceId,

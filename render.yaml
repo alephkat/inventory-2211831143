@@ -28,6 +28,13 @@ services:
         value: "60000"
       - key: RATE_LIMIT_MAX
         value: "300"
+      # Prisma connection pool. Without these, Prisma opens
+      # num_cpus * 2 + 1 connections, which overshoots the free
+      # Postgres plan and queues requests behind pool timeouts.
+      - key: DB_POOL_SIZE
+        value: "5"
+      - key: DB_POOL_TIMEOUT
+        value: "20"
       # --- Database (provided automatically by the Render database below) ---
       - key: DATABASE_URL
         fromDatabase:

@@ -33,7 +33,7 @@ export class DashboardService {
         ]);
         const recentTransactions = await prisma.inventoryTransaction.findMany({
             where: { status: 'COMPLETED' },
-            include: { product: true, warehouse: true },
+            include: { product: { select: { name: true, sku: true, unit: true } }, warehouse: { select: { name: true } } },
             orderBy: { createdAt: 'desc' },
             take: 10,
         });
@@ -43,7 +43,7 @@ export class DashboardService {
                 expiryDate: { not: null, lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
                 ...(warehouseId ? { warehouseId } : {}),
             },
-            include: { warehouse: true },
+            include: { warehouse: { select: { name: true } } },
             orderBy: { expiryDate: 'asc' },
             take: 20,
         });

@@ -3,6 +3,9 @@ import { permissionsForRole } from '../types/permissions.js';
 import { prisma } from '../config/database.js';
 import { config } from '../config/env.js';
 export { requirePermission, requireRole } from './rbac.js';
+
+const userCache = new Map();
+const CACHE_TTL = 30000;
 /**
  * Authentication middleware.
  * Verifies the JWT access token and hydrates `req.user` with the user's
@@ -34,6 +37,12 @@ export const requireAuth = async (req, _res, next) => {
         });
     }
     try {
+        const cached = userCache.get(payload.sub);
+        if (cached && cached.expiry > Date.now()) {
+            req.user = cached.user;
+            return next();
+        }
+
         const user = await prisma.user.findUnique({
             where: { id: payload.sub },
         });
@@ -44,7 +53,7 @@ export const requireAuth = async (req, _res, next) => {
                 code: 401,
             });
         }
-        req.user = {
+        const userData = {
             id: user.id,
             username: user.username,
             role: user.role,
@@ -52,6 +61,8 @@ export const requireAuth = async (req, _res, next) => {
             status: user.status,
             warehouseId: user.warehouseId,
         };
+        userCache.set(payload.sub, { expiry: Date.now() + CACHE_TTL, user: userData });
+        req.user = userData;
         next();
     }
     catch (err) {
